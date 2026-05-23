@@ -1,0 +1,26 @@
+{
+	"include": [
+		"$(MODDABLE)/examples/manifest_mod.json"
+	],
+	"modules": {
+		"*": "./main.js"
+	},
+      "resources": {
+      "media": [
+        {
+          "file": "images/menuicon.png",
+          "menuIcon": true,
+          "name": "MENU_ICON",
+          "type": "bitmap"
+        },
+        {
+          "file": "assets/order_num_0.png",
+          "name": "order_num_0",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        }
+        ]
+      }
+}
