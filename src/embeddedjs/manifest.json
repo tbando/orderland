@@ -20,6 +20,78 @@
           "targetPlatforms": [
             "emery"
           ]
+        },
+        {
+          "file": "assets/order_num_1.png",
+          "name": "order_num_1",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_2.png",
+          "name": "order_num_2",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_3.png",
+          "name": "order_num_3",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_4.png",
+          "name": "order_num_4",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_5.png",
+          "name": "order_num_5",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_6.png",
+          "name": "order_num_6",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_7.png",
+          "name": "order_num_7",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_8.png",
+          "name": "order_num_8",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
+        },
+        {
+          "file": "assets/order_num_9.png",
+          "name": "order_num_9",
+          "type": "bitmap",
+          "targetPlatforms": [
+            "emery"
+          ]
         }
         ]
       }
