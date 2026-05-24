@@ -1,0 +1,9 @@
+{
+  "font_path": "Spire.ttf",
+  "image_width": 64,
+  "image_height": 90,
+  "font_size": 125,
+  "threshold": 127,
+  "output_dir": "../src/embeddedjs/assets/",
+  "filename_prefix": "order_num_"
+}
