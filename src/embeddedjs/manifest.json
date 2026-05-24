@@ -6,17 +6,15 @@
 		"*": "./main.js"
 	},
 	"resources": {
-		"*": [
-			"./assets/order_num_0",
-			"./assets/order_num_1",
-			"./assets/order_num_2",
-			"./assets/order_num_3",
-			"./assets/order_num_4",
-			"./assets/order_num_5",
-			"./assets/order_num_6",
-			"./assets/order_num_7",
-			"./assets/order_num_8",
-			"./assets/order_num_9"
-		]
+		"n0": "./assets/order_num_0",
+		"n1": "./assets/order_num_1",
+		"n2": "./assets/order_num_2",
+		"n3": "./assets/order_num_3",
+		"n4": "./assets/order_num_4",
+		"n5": "./assets/order_num_5",
+		"n6": "./assets/order_num_6",
+		"n7": "./assets/order_num_7",
+		"n8": "./assets/order_num_8",
+		"n9": "./assets/order_num_9"
 	}
 }

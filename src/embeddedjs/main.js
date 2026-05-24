@@ -8,7 +8,6 @@ const black = render.makeColor(0, 0, 0);
 const white = render.makeColor(255, 255, 255);
 const red = render.makeColor(255, 0, 0);
 const blue = render.makeColor(0, 0, 255);
-const green = render.makeColor(0, 255, 0);
 
 const TIME_CONFIG = {
     h1: { x: 10, y: 50 },
@@ -19,38 +18,28 @@ const TIME_CONFIG = {
 
 const digitBitmaps = [];
 
+// Explicitly load using the keys defined in the manifest object
 for (let i = 0; i <= 9; i++) {
     let bmp = null;
     let res = null;
-    let foundName = null;
-    
-    // Expanded list of possible internal resource names
-    const possibleNames = [
-        `order_num_${i}`,
-        `order_num_${i}-color`,
-        `order_num_${i}-mask`,
-        `order_num_${i}-alpha`,
-        `assets/order_num_${i}`,
-        `assets/order_num_${i}-color`,
-        `./assets/order_num_${i}`,
-        `order_num_${i}.png`,
-        `order_num_${i}.bmp`
-    ];
+    let key = `n${i}`;
 
-    for (let name of possibleNames) {
-        // Try as constructor (Standard Moddable)
-        try {
-            res = new Resource(name);
-            if (res) { foundName = name; break; }
-        } catch (e) {}
-        
-        // Try as static get method (Some Pebble/Alloy environments)
-        try {
-            if (Resource.get) {
-                res = Resource.get(name);
-                if (res) { foundName = name; break; }
-            }
-        } catch (e) {}
+    try {
+        res = new Resource(key);
+    } catch (e) {
+        // Fallback to searching other common patterns if explicit key fails
+        const fallbacks = [
+            `${key}-color`,
+            `${key}-mask`,
+            `order_num_${i}`,
+            `order_num_${i}-color`
+        ];
+        for (let f of fallbacks) {
+            try {
+                res = new Resource(f);
+                if (res) break;
+            } catch (e2) {}
+        }
     }
 
     if (res) {
@@ -88,17 +77,10 @@ function draw(event) {
         if (bmp && bmp !== "INVALID_BITMAP") {
             render.drawBitmap(bmp, config.x, config.y);
         } else if (bmp === "INVALID_BITMAP") {
-            // Blue: Resource found, but failed to parse as Bitmap
             render.fillRectangle(blue, config.x, config.y, 30, 50);
         } else {
-            // Red: Resource not found with any name
             render.fillRectangle(red, config.x, config.y, 30, 50);
         }
-    }
-
-    // Success indicator: draw a tiny green pixel if at least one resource was found
-    if (digitBitmaps.some(b => b !== null)) {
-        render.fillRectangle(green, 0, 0, 5, 5);
     }
 
     render.end();
