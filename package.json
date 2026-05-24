@@ -11,7 +11,58 @@
         "messageKeys": [],
         "projectType": "moddable",
         "resources": {
-            "media": []
+            "media": [
+                {
+                    "type": "bitmap",
+                    "name": "order_num_0",
+                    "file": "src/embeddedjs/assets/order_num_0.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_1",
+                    "file": "src/embeddedjs/assets/order_num_1.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_2",
+                    "file": "src/embeddedjs/assets/order_num_2.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_3",
+                    "file": "src/embeddedjs/assets/order_num_3.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_4",
+                    "file": "src/embeddedjs/assets/order_num_4.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_5",
+                    "file": "src/embeddedjs/assets/order_num_5.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_6",
+                    "file": "src/embeddedjs/assets/order_num_6.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_7",
+                    "file": "src/embeddedjs/assets/order_num_7.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_8",
+                    "file": "src/embeddedjs/assets/order_num_8.png"
+                },
+                {
+                    "type": "bitmap",
+                    "name": "order_num_9",
+                    "file": "src/embeddedjs/assets/order_num_9.png"
+                }
+            ]
         },
         "sdkVersion": "3",
         "targetPlatforms": [
