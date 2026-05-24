@@ -1,9 +1,9 @@
 {
 	"include": [
-		"$(MODDABLE)/examples/manifest_base.json"
+		"$(MODDABLE)/examples/manifest_mod.json"
 	],
 	"modules": {
-		"*": "./main"
+		"*": "./main.js"
 	},
 	"resources": {
 		"*-mask": [
@@ -18,22 +18,5 @@
 			"./assets/order_num_8",
 			"./assets/order_num_9"
 		]
-	},
-	"creation": {
-		"static": 32768,
-		"chunk": {
-			"initial": 1536,
-			"incremental": 512
-		},
-		"heap": {
-			"initial": 512,
-			"incremental": 64
-		},
-		"stack": 256,
-		"keys": {
-			"initial": 32,
-			"name": 53
-		},
-		"main": "main"
 	}
 }
