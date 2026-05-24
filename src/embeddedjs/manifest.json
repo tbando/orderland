@@ -6,17 +6,17 @@
 		"*": "./main.js"
 	},
 	"resources": {
-		"*": [
-			"./assets/order_num_0",
-			"./assets/order_num_1",
-			"./assets/order_num_2",
-			"./assets/order_num_3",
-			"./assets/order_num_4",
-			"./assets/order_num_5",
-			"./assets/order_num_6",
-			"./assets/order_num_7",
-			"./assets/order_num_8",
-			"./assets/order_num_9"
+		"media": [
+			{ "file": "./assets/order_num_0.png", "name": "num0", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_1.png", "name": "num1", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_2.png", "name": "num2", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_3.png", "name": "num3", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_4.png", "name": "num4", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_5.png", "name": "num5", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_6.png", "name": "num6", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_7.png", "name": "num7", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_8.png", "name": "num8", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "./assets/order_num_9.png", "name": "num9", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] }
 		]
 	}
 }

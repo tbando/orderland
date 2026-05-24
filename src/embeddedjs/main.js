@@ -19,26 +19,21 @@ const TIME_CONFIG = {
 
 const digitBitmaps = [];
 
-// Try to load digits with different naming conventions
+// Load digits using the explicit short names defined in manifest.json
 for (let i = 0; i <= 9; i++) {
     let bmp = null;
     let res = null;
 
-    // Try Name 1: "order_num_0"
     try {
-        res = new Resource(`order_num_${i}`);
-    } catch (e) {
-        // Try Name 2: "assets/order_num_0" (Common in Moddable)
-        try {
-            res = new Resource(`assets/order_num_${i}`);
-        } catch (e2) {}
-    }
+        // Explicit name match: "num0", "num1", ...
+        res = new Resource(`num${i}`);
+    } catch (e) {}
 
     if (res) {
         try {
             bmp = new Bitmap(res);
-        } catch (e3) {
-            bmp = "INVALID_BITMAP"; // Special flag for debugging
+        } catch (e) {
+            bmp = "INVALID_BITMAP";
         }
     }
 
@@ -49,8 +44,6 @@ function draw(event) {
     const now = event.date || new Date();
 
     render.begin();
-    
-    // Background: Black
     render.fillRectangle(black, 0, 0, render.width, render.height);
 
     const hours = now.getHours();
@@ -71,10 +64,8 @@ function draw(event) {
         if (bmp && bmp !== "INVALID_BITMAP") {
             render.drawBitmap(bmp, config.x, config.y);
         } else if (bmp === "INVALID_BITMAP") {
-            // Blue: Resource found, but not a valid Bitmap format
             render.fillRectangle(blue, config.x, config.y, 30, 50);
         } else {
-            // Red: Resource not found at all
             render.fillRectangle(red, config.x, config.y, 30, 50);
         }
     }
