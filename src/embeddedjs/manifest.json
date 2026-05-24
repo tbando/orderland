@@ -3,8 +3,20 @@
 		"$(MODDABLE)/examples/manifest_base.json"
 	],
 	"modules": {
-		"*": [
-			"./main"
+		"*": "./main"
+	},
+	"resources": {
+		"*-mask": [
+			"./assets/order_num_0",
+			"./assets/order_num_1",
+			"./assets/order_num_2",
+			"./assets/order_num_3",
+			"./assets/order_num_4",
+			"./assets/order_num_5",
+			"./assets/order_num_6",
+			"./assets/order_num_7",
+			"./assets/order_num_8",
+			"./assets/order_num_9"
 		]
 	},
 	"creation": {
