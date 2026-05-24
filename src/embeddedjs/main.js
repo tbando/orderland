@@ -4,6 +4,10 @@ import Bitmap from "commodetto/Bitmap";
 
 const render = new Poco(screen);
 
+const black = render.makeColor(0, 0, 0);
+const white = render.makeColor(255, 255, 255);
+const red = render.makeColor(255, 0, 0);
+
 // Configuration for digit positions
 const TIME_CONFIG = {
     h1: { x: 10, y: 40 },
@@ -12,65 +16,60 @@ const TIME_CONFIG = {
     m2: { x: 140, y: 40 }
 };
 
-// Load digit bitmaps (moved inside a safe block)
+// Attempt to load bitmaps with potential path variations
 const digitBitmaps = [];
-try {
-    for (let i = 0; i <= 9; i++) {
-        let res = Resource.get(`order_num_${i}`);
-        if (res) {
-            digitBitmaps.push(new Bitmap(res));
-        }
+for (let i = 0; i <= 9; i++) {
+    let name = `order_num_${i}`;
+    let res = Resource.exists(name) ? Resource.get(name) : null;
+    
+    // Fallback: try with assets/ prefix if the above fails
+    if (!res) {
+        name = `assets/order_num_${i}`;
+        res = Resource.exists(name) ? Resource.get(name) : null;
     }
-} catch (e) {
-    // If loading fails, the array will be short or empty
+
+    if (res) {
+        digitBitmaps.push(new Bitmap(res));
+    } else {
+        digitBitmaps.push(null);
+    }
 }
-
-// Fonts for date
-let dateFont;
-try {
-    dateFont = new render.Font("Gothic-Bold", 24);
-} catch (e) {}
-
-// Colors
-const black = render.makeColor(0, 0, 0);
-const white = render.makeColor(255, 255, 255);
-const gray = render.makeColor(100, 100, 100);
-
-// Day and month names
-const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function draw(event) {
     const now = event.date || new Date();
 
     render.begin();
     
-    // Background: Use gray instead of black for debugging to see if drawing works
-    render.fillRectangle(gray, 0, 0, render.width, render.height);
+    // 1. Clear screen with black
+    render.fillRectangle(black, 0, 0, render.width, render.height);
 
-    // Get digits
+    // 2. Heartbeat: Draw a small white square at the top-left 
+    // to confirm the draw function is actually running
+    render.fillRectangle(white, 0, 0, 10, 10);
+
     const hours = now.getHours();
     const minutes = now.getMinutes();
+    const digits = [
+        Math.floor(hours / 10),
+        hours % 10,
+        Math.floor(minutes / 10),
+        minutes % 10
+    ];
+    const configs = [TIME_CONFIG.h1, TIME_CONFIG.h2, TIME_CONFIG.m1, TIME_CONFIG.m2];
 
-    const h1 = Math.floor(hours / 10);
-    const h2 = hours % 10;
-    const m1 = Math.floor(minutes / 10);
-    const m2 = minutes % 10;
+    // 3. Draw digits or fallback rectangles
+    for (let i = 0; i < 4; i++) {
+        const digit = digits[i];
+        const config = configs[i];
+        const bmp = digitBitmaps[digit];
 
-    // Draw digits if they exist
-    if (digitBitmaps[h1]) render.drawBitmap(digitBitmaps[h1], TIME_CONFIG.h1.x, TIME_CONFIG.h1.y);
-    if (digitBitmaps[h2]) render.drawBitmap(digitBitmaps[h2], TIME_CONFIG.h2.x, TIME_CONFIG.h2.y);
-    if (digitBitmaps[m1]) render.drawBitmap(digitBitmaps[m1], TIME_CONFIG.m1.x, TIME_CONFIG.m1.y);
-    if (digitBitmaps[m2]) render.drawBitmap(digitBitmaps[m2], TIME_CONFIG.m2.x, TIME_CONFIG.m2.y);
-
-    // Date
-    if (dateFont) {
-        const dayName = DAYS[now.getDay()];
-        const monthName = MONTHS[now.getMonth()];
-        const dateStr = `${dayName} ${monthName} ${String(now.getDate()).padStart(2, "0")}`;
-        const width = render.getTextWidth(dateStr, dateFont);
-        render.drawText(dateStr, dateFont, white, (render.width - width) / 2, render.height - 40);
+        if (bmp) {
+            render.drawBitmap(bmp, config.x, config.y);
+        } else {
+            // Fallback: If image fails to load, draw a red rectangle
+            // so we know WHERE it's supposed to be
+            render.fillRectangle(red, config.x, config.y, 30, 50);
+        }
     }
 
     render.end();
