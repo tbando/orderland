@@ -6,17 +6,34 @@
 		"*": "./main.js"
 	},
 	"resources": {
-		"*": [
-			"./assets/order_num_0",
-			"./assets/order_num_1",
-			"./assets/order_num_2",
-			"./assets/order_num_3",
-			"./assets/order_num_4",
-			"./assets/order_num_5",
-			"./assets/order_num_6",
-			"./assets/order_num_7",
-			"./assets/order_num_8",
-			"./assets/order_num_9"
+		"media": [
+			{ "file": "assets/order_num_0.png", "name": "order_num_0", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_1.png", "name": "order_num_1", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_2.png", "name": "order_num_2", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_3.png", "name": "order_num_3", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_4.png", "name": "order_num_4", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_5.png", "name": "order_num_5", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_6.png", "name": "order_num_6", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_7.png", "name": "order_num_7", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_8.png", "name": "order_num_8", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] },
+			{ "file": "assets/order_num_9.png", "name": "order_num_9", "type": "bitmap", "targetPlatforms": ["emery", "gabbro"] }
 		]
+	},
+	"creation": {
+		"static": 32768,
+		"chunk": {
+			"initial": 1536,
+			"incremental": 512
+		},
+		"heap": {
+			"initial": 512,
+			"incremental": 64
+		},
+		"stack": 256,
+		"keys": {
+			"initial": 32,
+			"name": 53
+		},
+		"main": "main"
 	}
 }
