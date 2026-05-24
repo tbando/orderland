@@ -1,0 +1,26 @@
+{
+	"config": {
+		"icon": "./icon.png",
+		"watchface": true
+	},
+	"modules": {
+		"*": "./main"
+	},
+	"platforms": {
+		"*/emery": {
+			"modules": {
+				"*": "./emery/layout"
+			},
+			"resources": {
+				"*-alpha": [ "./assets/order_digits", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"]
+			}
+		},
+		"...": {
+			"error": "Platform not supported"
+		}
+	},
+	"include": [
+		"$(MODDABLE)/examples/manifest_mod.json",
+		"$(MODDABLE)/examples/manifest_typings.json"
+	]
+}
