@@ -6,7 +6,7 @@
 		"*": "./main.js"
 	},
 	"resources": {
-		"*-mask": [
+		"*": [
 			"./assets/order_num_0",
 			"./assets/order_num_1",
 			"./assets/order_num_2",

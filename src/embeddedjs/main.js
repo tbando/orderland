@@ -15,7 +15,7 @@ const TIME_CONFIG = {
 // Load digit bitmaps
 const digitBitmaps = [];
 for (let i = 0; i <= 9; i++) {
-    digitBitmaps.push(new Bitmap(Resource.get(`order_num_${i}-mask`)));
+    digitBitmaps.push(new Bitmap(Resource.get(`order_num_${i}`)));
 }
 
 // Fonts for date
