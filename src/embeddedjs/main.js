@@ -6,7 +6,7 @@ const render = new Poco(screen);
 
 const black = render.makeColor(0, 0, 0);
 const white = render.makeColor(255, 255, 255);
-const red = render.makeColor(255, 0, 0);
+const yellow = render.makeColor(255, 255, 0);
 
 // Configuration for digit positions
 const TIME_CONFIG = {
@@ -16,21 +16,14 @@ const TIME_CONFIG = {
     m2: { x: 140, y: 40 }
 };
 
-// Attempt to load bitmaps with potential path variations
+// Load digit bitmaps using the standard constructor
 const digitBitmaps = [];
 for (let i = 0; i <= 9; i++) {
-    let name = `order_num_${i}`;
-    let res = Resource.exists(name) ? Resource.get(name) : null;
-    
-    // Fallback: try with assets/ prefix if the above fails
-    if (!res) {
-        name = `assets/order_num_${i}`;
-        res = Resource.exists(name) ? Resource.get(name) : null;
-    }
-
-    if (res) {
+    try {
+        // Standard Moddable resource access
+        let res = new Resource(`order_num_${i}`);
         digitBitmaps.push(new Bitmap(res));
-    } else {
+    } catch (e) {
         digitBitmaps.push(null);
     }
 }
@@ -40,12 +33,11 @@ function draw(event) {
 
     render.begin();
     
-    // 1. Clear screen with black
-    render.fillRectangle(black, 0, 0, render.width, render.height);
+    // 1. Fill with Yellow background (Very visible if it works)
+    render.fillRectangle(yellow, 0, 0, render.width, render.height);
 
-    // 2. Heartbeat: Draw a small white square at the top-left 
-    // to confirm the draw function is actually running
-    render.fillRectangle(white, 0, 0, 10, 10);
+    // 2. Draw a black rectangle in the center to confirm rendering
+    render.fillRectangle(black, 20, 20, render.width - 40, render.height - 40);
 
     const hours = now.getHours();
     const minutes = now.getMinutes();
@@ -57,7 +49,7 @@ function draw(event) {
     ];
     const configs = [TIME_CONFIG.h1, TIME_CONFIG.h2, TIME_CONFIG.m1, TIME_CONFIG.m2];
 
-    // 3. Draw digits or fallback rectangles
+    // 3. Draw digits
     for (let i = 0; i < 4; i++) {
         const digit = digits[i];
         const config = configs[i];
@@ -66,9 +58,8 @@ function draw(event) {
         if (bmp) {
             render.drawBitmap(bmp, config.x, config.y);
         } else {
-            // Fallback: If image fails to load, draw a red rectangle
-            // so we know WHERE it's supposed to be
-            render.fillRectangle(red, config.x, config.y, 30, 50);
+            // Draw a white small box as fallback for missing image
+            render.fillRectangle(white, config.x, config.y, 20, 30);
         }
     }
 
