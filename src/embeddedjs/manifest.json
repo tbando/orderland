@@ -12,7 +12,8 @@
 				"*": "./emery/layout"
 			},
 			"resources": {
-				"*-alpha": [ "./assets/order_digits", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"]
+				"*-alpha": [ "./assets/order_digits", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"],
+        "*": ["./assets/weather_dots"]
 			}
 		},
 		"...": {

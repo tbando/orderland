@@ -37,13 +37,16 @@ class FaceApplicationBehavior {
 		content = content.next;
     // step label
 		content.variant = 0;
-		//content = content.next;
-		//content.string = date.toISOString().slice(0, 10);
-  
-  //if (watch && watch.health && watch.health.steps !== undefined) {
-    //currentSteps = watch.health.steps;
-  //}
-  //console.log (JSON.stringify(watch));
+		content = content.next;
+  // weather
+    content.variant = 0;
+		content = content.next;
+		content.variant = 3;
+		content = content.next;
+		
+
+    // test
+    
 	}
 }
 

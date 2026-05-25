@@ -8,3 +8,5 @@ int main(void) {
 
 	window_destroy(w);
 }
+
+
