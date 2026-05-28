@@ -10,6 +10,7 @@ const weatherSkin = new Skin({ texture: new Texture(`weather_dots.png`), width:6
 const whiteSkin = new Skin({ fill: "white" });
 const redSkin = new Skin({ fill: "red" });
 
+
 const dots = [];
 
   for (let col = 0; col < 24; col++) {

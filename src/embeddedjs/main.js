@@ -1,64 +1,103 @@
 import Layout from "layout";
+import Message from "pebble/message";
+
+let weatherCurrentCode = 0;
+let tempMax = 0;
+let tempMin = 0;
+let weatherHourlyCodes = new Array(24).fill(0); 
+let isPhoneReady = false;
 
 class FaceApplicationBehavior {
-	onDisplaying(application) {
-		watch.addEventListener('minutechange', (clock) => {
-			application.distribute("onClockChanged", clock);
-		});
-	}
-	onClockChanged(application, clock) {
-		const now = clock.date;
-		const hours = now.getHours();
-		const minutes = now.getMinutes();
+  onDisplaying(application) {
+    application.distribute("onClockChanged", { date: new Date() });
+
+    watch.addEventListener('minutechange', (clock) => {
+      application.distribute("onClockChanged", clock);
+    });
+
+    watch.addEventListener('hourchange', (clock) => {
+      if (isPhoneReady && globalThis.messageInstance) {
+        globalThis.messageInstance.write({ req_weather: 1 });
+      }
+    });
+  }
+  
+  onClockChanged(application, clock) {
+    const now = clock.date || new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
     const month = now.getMonth();
     const date = now.getDate();
     const day = now.getDay();
-		let content = application.first.first;
-    // hours
-		content.variant = Math.idiv(hours, 10);
-		content = content.next;
-		content.variant = hours % 10;
-		content = content.next;
-		// minutes
-    content.variant = Math.idiv(minutes, 10);
-		content = content.next;
-		content.variant = minutes % 10;
-		content = content.next;
-		// month
-    content.variant = month;
-  	content = content.next;
-		// date
-    content.variant = Math.idiv(date, 10);
-  	content = content.next;
-    content.variant = date % 10;
-  	content = content.next;
-		// day
-    content.variant = day;
-		content = content.next;
-    // step label
-		content.variant = 0;
-		content = content.next;
-  // weather
-    content.variant = 0;
-		content = content.next;
-		content.variant = 3;
-		content = content.next;
-		
-
-    // test
+    let content = application.first.first;
     
-	}
+    // 基本時計・カレンダー描画
+    if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
+    if (content) { content.variant = hours % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
+    if (content) { content.variant = minutes % 10; content = content.next; }
+    if (content) { content.variant = month; content = content.next; }
+    if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
+    if (content) { content.variant = date % 10; content = content.next; }
+    if (content) { content.variant = day; content = content.next; }
+    if (content) { content.variant = 0; content = content.next; } 
+    
+    // 現在の天気、最高気温、最低気温の順にUIマッピング
+    //if (content) { content.variant = weatherCurrentCode; content = content.next; }
+    //if (content) { content.variant = tempMax; content = content.next; }
+    //if (content) { content.variant = tempMin; content = content.next; }
+
+    // 復元された24時間分の配列をループで安全に適用
+    for (let i = 0; i < 24; i++) {
+      if (content) {
+        content.variant = weatherHourlyCodes[i];
+        content = content.next;
+      }
+    }
+  }
 }
 
 const FaceApplication = Application.template($ => ({
-	Behavior:FaceApplicationBehavior,
-	contents: [
-		Layout($),
-	]
+  Behavior: FaceApplicationBehavior,
+  contents: [
+    Layout($),
+  ]
 }));
 
-export default new FaceApplication(null, { 
-	displayListLength:2048, 
-	touchCount:0, 
-	pixels: screen.width * 4,
+const app = new FaceApplication(null, { 
+  displayListLength: 2048, 
+  touchCount: 0, 
+  pixels: screen.width * 4,
 });
+
+globalThis.messageInstance = new Message({
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather"], 
+  
+  onReadable() {
+    isPhoneReady = true; 
+    const msg = this.read();
+    
+    msg.forEach((value, key) => {
+      if (key === "weather") {
+        weatherCurrentCode = value;
+      } else if (key === "temp_max") {
+        tempMax = value;
+      } else if (key === "temp_min") {
+        tempMin = value;
+      } else if (key === "weather_codes") {
+        // 文字列から24個の整数配列へとクリーンに復元
+        const strArray = value.split(",");
+        weatherHourlyCodes = [];
+        for (let i = 0; i < strArray.length; i++) {
+          weatherHourlyCodes.push(parseInt(strArray[i], 10));
+        }
+        console.log("Watch successfully restored 24h data: " + JSON.stringify(weatherHourlyCodes));
+      }
+    });
+
+    // 正確な気温と配列が揃った状態で画面を一斉再描画
+    app.distribute("onClockChanged", { date: new Date() });
+  }
+});
+
+export default app;

@@ -1,6 +1,8 @@
 {
     "author": "tbando",
-    "dependencies": {},
+    "dependencies": {
+        "@moddable/pebbleproxy": "^0.1.8"
+    },
     "keywords": [
         "pebble-app"
     ],
@@ -13,7 +15,11 @@
         "displayName": "Orderland",
         "enableMultiJS": true,
         "messageKeys": [
-            "dummy"
+            "weather",
+            "temp_max",
+            "temp_min",
+            "weather_codes",
+            "req_weather"
         ],
         "projectType": "moddable",
         "resources": {
