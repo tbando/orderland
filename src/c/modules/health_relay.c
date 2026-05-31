@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V3 Deep Search Version
+// modules/health_relay — V4 Deep Debug Version
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -14,29 +14,41 @@ static void schedule_retry(uint32_t ms);
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
   time_t now = time(NULL);
-  
-	// 1. Try multiple ranges
+  struct tm *t = localtime(&now);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: System Time: %02d:%02d:%02d (now=%ld)", 
+          t->tm_hour, t->tm_min, t->tm_sec, (long)now);
+
+  // 1. Check Accessibility for Steps
+  HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(HealthMetricStepCount, 
+                                                                               now - SECONDS_PER_DAY, 
+                                                                               now);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Steps Accessibility Mask: %d", (int)steps_mask);
+  if (!(steps_mask & HealthServiceAccessibilityMaskAvailable)) {
+    APP_LOG(APP_LOG_LEVEL_ERROR, "RELAY: STEPS NOT AVAILABLE IN FIRMWARE/SETTINGS");
+  }
+
+  // 2. Sample multiple metrics
 	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
   int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
-  int32_t steps_week = (int32_t)health_service_sum(HealthMetricStepCount, now - (7 * SECONDS_PER_DAY), now);
-  
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: steps [today:%ld] [24h:%ld] [7d:%ld]", 
-          (long)steps_today, (long)steps_24h, (long)steps_week);
-  
-  // 2. Try distance
+  int32_t steps_7d = (int32_t)health_service_sum(HealthMetricStepCount, now - (7 * SECONDS_PER_DAY), now);
   int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: dist_today=%ld", (long)dist_today);
+  int32_t kcal_today = (int32_t)health_service_sum_today(HealthMetricRestingKiloCalories);
+  
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: DATA -> steps[today:%ld, 24h:%ld, 7d:%ld] dist:%ld kcal:%ld", 
+          (long)steps_today, (long)steps_24h, (long)steps_7d, (long)dist_today, (long)kcal_today);
 
-  // 3. Heart rate
+  // 3. Heart Rate check
 	int32_t heart_rate = 0;
 #ifdef PBL_HEALTH
+  HealthServiceAccessibilityMask hr_mask = health_service_metric_accessible(HealthMetricHeartRateBPM, now - 60, now);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: HR Accessibility Mask: %d", (int)hr_mask);
   heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
 #endif
 
-  // Pick the best non-zero step count
+  // Pick the best non-zero step count for display
   int32_t steps_to_send = steps_today;
   if (steps_to_send <= 0) steps_to_send = steps_24h;
-  if (steps_to_send <= 0) steps_to_send = steps_week;
+  if (steps_to_send <= 0) steps_to_send = steps_7d;
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -82,18 +94,23 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
   app_message_register_inbox_received(inbox_received_handler);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Inbox handler registered (delayed 10s)");
 	send_health_snapshot();
 }
 
 // Dummy handler to keep service active
-static void health_event_handler(HealthEventType event, void *context) {}
+static void health_event_handler(HealthEventType event, void *context) {
+  // We can log event type here to see if we get movement/heart rate updates
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "RELAY: Health Event received: %d", (int)event);
+}
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V3_7DAY_SEARCH ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V4_DEEP_DEBUG ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
-	s_startup_timer = app_timer_register(8000, startup_timer_handler, NULL);
+  // Use a longer delay to ensure system settle
+	s_startup_timer = app_timer_register(10000, startup_timer_handler, NULL);
 }
 
 void health_relay_deinit(void) {

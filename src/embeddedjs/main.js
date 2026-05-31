@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V3_7DAY_SEARCH ===");
+console.log("=== BUILD MARKER: V4_DEEP_DEBUG ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
