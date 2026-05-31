@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V15_FINAL_VERIFY ===");
+console.log("=== BUILD MARKER: V16_FINAL_SYNC ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -89,8 +89,10 @@ const app = new FaceApplication(null, {
   pixels: screen.width * 4,
 });
 
+// "10006" is the typical internal key generated for "HEALTH_STEPS" by Pebble SDK
+// "10007" is the typical internal key generated for "HEART_RATE_BPM"
 globalThis.messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM", "10006", "10007"], 
   
   onReadable() {
     isPhoneReady = true; 
@@ -114,10 +116,12 @@ globalThis.messageInstance = new Message({
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
         localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-      } else if (key === "HEALTH_STEPS") {
+      } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
         console.log("Alloy: Internal steps updated to: " + steps);
+      } else if (key === "HEART_RATE_BPM" || key === "10007") {
+        console.log("Alloy: Heart rate updated to: " + value);
       }
     });
 
