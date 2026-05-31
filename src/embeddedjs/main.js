@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V12_FIX_JS_EXCEPTION ===");
+console.log("=== BUILD MARKER: FINAL_STABLE ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
@@ -15,22 +15,10 @@ class FaceApplicationBehavior {
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
-      application.distribute("onClockChanged", clock);
+          application.distribute("onClockChanged", clock);
+        });
 
-      const now = clock.date || new Date();
-      if (now.getMinutes() % 5 === 0) {
-        if (isPhoneReady && globalThis.messageInstance) {
-          try {
-            console.log("Alloy: Requesting health data...");
-            globalThis.messageInstance.write({ req_health: 1 });
-          } catch (e) {
-            console.log("Alloy: req_health write failed: " + e);
-          }
-        }
-      }
-    });
-
-    watch.addEventListener('hourchange', (clock) => {
+        watch.addEventListener('hourchange', (clock) => {
       if (isPhoneReady && globalThis.messageInstance) {
         try {
           globalThis.messageInstance.write({ req_weather: 1 });
