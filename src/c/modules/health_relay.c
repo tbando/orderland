@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V4 Deep Debug Version
+// modules/health_relay — V6 Mask Check Version
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -11,44 +11,34 @@ static AppTimer *s_startup_timer = NULL;
 
 static void schedule_retry(uint32_t ms);
 
+static const char* get_mask_string(HealthServiceAccessibilityMask mask) {
+  if (mask == (HealthServiceAccessibilityMaskAvailable | HealthServiceAccessibilityMaskAccessible)) return "OK (3)";
+  if (mask == HealthServiceAccessibilityMaskAvailable) return "Available ONLY (1) - PERMISSION DENIED";
+  if (mask == HealthServiceAccessibilityMaskNotAvailable) return "Not Available (0)";
+  return "Unknown Mask Value";
+}
+
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
   time_t now = time(NULL);
-  struct tm *t = localtime(&now);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: System Time: %02d:%02d:%02d (now=%ld)", 
-          t->tm_hour, t->tm_min, t->tm_sec, (long)now);
-
-  // 1. Check Accessibility for Steps
-  HealthServiceAccessibilityMask steps_mask = health_service_metric_accessible(HealthMetricStepCount, 
-                                                                               now - SECONDS_PER_DAY, 
-                                                                               now);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Steps Accessibility Mask: %d", (int)steps_mask);
-  if (!(steps_mask & HealthServiceAccessibilityMaskAvailable)) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "RELAY: STEPS NOT AVAILABLE IN FIRMWARE/SETTINGS");
-  }
-
-  // 2. Sample multiple metrics
-	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
-  int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
-  int32_t steps_7d = (int32_t)health_service_sum(HealthMetricStepCount, now - (7 * SECONDS_PER_DAY), now);
-  int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  int32_t kcal_today = (int32_t)health_service_sum_today(HealthMetricRestingKCalories);
   
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: DATA -> steps[today:%ld, 24h:%ld, 7d:%ld] dist:%ld kcal:%ld", 
-          (long)steps_today, (long)steps_24h, (long)steps_7d, (long)dist_today, (long)kcal_today);
+  // 1. Detailed Mask Logging
+  HealthServiceAccessibilityMask m_steps = health_service_metric_accessible(HealthMetricStepCount, now-60, now);
+  HealthServiceAccessibilityMask m_dist = health_service_metric_accessible(HealthMetricWalkedDistanceMeters, now-60, now);
+  HealthServiceAccessibilityMask m_hr = health_service_metric_accessible(HealthMetricHeartRateBPM, now-60, now);
+  HealthServiceAccessibilityMask m_kcal_r = health_service_metric_accessible(HealthMetricRestingKCalories, now-60, now);
+  HealthServiceAccessibilityMask m_kcal_a = health_service_metric_accessible(HealthMetricActiveKCalories, now-60, now);
 
-  // 3. Heart Rate check
-	int32_t heart_rate = 0;
-#ifdef PBL_HEALTH
-  HealthServiceAccessibilityMask hr_mask = health_service_metric_accessible(HealthMetricHeartRateBPM, now - 60, now);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: HR Accessibility Mask: %d", (int)hr_mask);
-  heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
-#endif
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: Steps:%s", get_mask_string(m_steps));
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: Dist:%s", get_mask_string(m_dist));
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: HR:%s", get_mask_string(m_hr));
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: RestKCal:%s", get_mask_string(m_kcal_r));
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: ActiveKCal:%s", get_mask_string(m_kcal_a));
 
-  // Pick the best non-zero step count for display
-  int32_t steps_to_send = steps_today;
-  if (steps_to_send <= 0) steps_to_send = steps_24h;
-  if (steps_to_send <= 0) steps_to_send = steps_7d;
+  // 2. Fetch Values
+	int32_t steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
+	int32_t heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
+  int32_t active_kcal = (int32_t)health_service_sum_today(HealthMetricActiveKCalories);
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -58,7 +48,7 @@ static void send_health_snapshot(void) {
 		return;
 	}
 
-	dict_write_int32(iter, MESSAGE_KEY_HEALTH_STEPS, steps_to_send);
+	dict_write_int32(iter, MESSAGE_KEY_HEALTH_STEPS, steps);
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
 
 	result = app_message_outbox_send();
@@ -68,7 +58,7 @@ static void send_health_snapshot(void) {
 		return;
 	}
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Final sent steps=%ld bpm=%ld", (long)steps_to_send, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Sent steps=%ld active_kcal=%ld bpm=%ld", (long)steps, (long)active_kcal, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {
@@ -94,23 +84,20 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
   app_message_register_inbox_received(inbox_received_handler);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Inbox handler registered (delayed 10s)");
 	send_health_snapshot();
 }
 
 // Dummy handler to keep service active
 static void health_event_handler(HealthEventType event, void *context) {
-  // We can log event type here to see if we get movement/heart rate updates
   APP_LOG(APP_LOG_LEVEL_DEBUG, "RELAY: Health Event received: %d", (int)event);
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V5_FIX_KCAL_TYPO ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V6_MASK_CHECK ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
-  // Use a longer delay to ensure system settle
-	s_startup_timer = app_timer_register(10000, startup_timer_handler, NULL);
+	s_startup_timer = app_timer_register(5000, startup_timer_handler, NULL);
 }
 
 void health_relay_deinit(void) {
