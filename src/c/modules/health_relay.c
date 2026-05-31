@@ -12,10 +12,11 @@ static AppTimer *s_startup_timer = NULL;
 static void schedule_retry(uint32_t ms);
 
 static const char* get_mask_string(HealthServiceAccessibilityMask mask) {
-  if (mask == (HealthServiceAccessibilityMaskAvailable | HealthServiceAccessibilityMaskAccessible)) return "OK (3)";
-  if (mask == HealthServiceAccessibilityMaskAvailable) return "Available ONLY (1) - PERMISSION DENIED";
-  if (mask == HealthServiceAccessibilityMaskNotAvailable) return "Not Available (0)";
-  return "Unknown Mask Value";
+  bool available = mask & 0x01;
+  bool accessible = mask & 0x02;
+  if (available && accessible) return "OK (Available+Accessible)";
+  if (available) return "Available ONLY - PERMISSION DENIED";
+  return "Not Available or Hidden";
 }
 
 // Send the current health snapshot to the phone. Retries on failure.
@@ -93,7 +94,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V6_MASK_CHECK ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V7_FIX_MASK_CONST ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

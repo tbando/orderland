@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V6_MASK_CHECK ===");
+console.log("=== BUILD MARKER: V7_FIX_MASK_CONST ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
