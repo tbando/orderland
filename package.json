@@ -19,7 +19,9 @@
             "temp_max",
             "temp_min",
             "weather_codes",
-            "req_weather"
+            "req_weather",
+            "HEALTH_STEPS",
+            "HEART_RATE_BPM"
         ],
         "projectType": "moddable",
         "resources": {

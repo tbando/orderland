@@ -2,6 +2,8 @@ const backgroundSkin = new Skin({ fill:"#000000" });
 const barSkin = new Skin({ fill:"#AAFFAA" });
 const digitsSkin = new Skin({ texture: new Texture(`order_digits.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
 const smallDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FFFFFF" });
+const smallRedDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FF5500" });
+const smallBlueDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#55AAFF" });
 const monthsSkin = new Skin({ texture: new Texture(`months.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
 const daysSkin = new Skin({ texture: new Texture(`days.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
 const labelsSkin = new Skin({ texture: new Texture(`labels.png`), width:80, height:30, variants:80, color:"#FFFFFF" });
@@ -45,6 +47,13 @@ const Layout = Container.template($ => ({
     // step label
     Content($, { left:0+2, top:110, skin:labelsSkin }),
 
+    // temp max
+    Content($, { left:0+2, bottom:5+24, skin:smallRedDigitsSkin }),
+    Content($, { left:12+2, bottom:5+24, skin:smallRedDigitsSkin }),
+    Content($, { left:24+2, bottom:5+24, skin:smallDigitsSkin }),
+    Content($, { left:36+2, bottom:5+24, skin:smallBlueDigitsSkin }),
+    Content($, { left:48+2, bottom:5+24, skin:smallBlueDigitsSkin }),
+    // weather dots
     ...dots
 	]
 }));

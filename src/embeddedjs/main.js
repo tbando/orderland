@@ -43,9 +43,11 @@ class FaceApplicationBehavior {
     if (content) { content.variant = 0; content = content.next; } 
     
     // 現在の天気、最高気温、最低気温の順にUIマッピング
-    //if (content) { content.variant = weatherCurrentCode; content = content.next; }
-    //if (content) { content.variant = tempMax; content = content.next; }
-    //if (content) { content.variant = tempMin; content = content.next; }
+    if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
+    if (content) { content.variant = tempMax % 10; content = content.next; }
+    if (content) { content.variant = 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
+    if (content) { content.variant = tempMin % 10; content = content.next; }
 
     // 復元された24時間分の配列をループで安全に適用
     for (let i = 0; i < 24; i++) {
