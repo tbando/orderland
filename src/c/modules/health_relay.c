@@ -74,25 +74,24 @@ static void startup_timer_handler(void *context) {
 	send_health_snapshot();
 }
 
-// Tick handler to send data every 5 minutes, synced to the clock.
-static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-  if (units_changed & MINUTE_UNIT) {
-    if (tick_time->tm_min % 5 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 5-min tick, sending health snapshot");
-      send_health_snapshot();
-    }
+// Inbox received callback. Responds to req_health from JS side.
+static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+  Tuple *req_health_tuple = dict_find(iter, MESSAGE_KEY_req_health);
+  if (req_health_tuple) {
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Received req_health from JS, sending snapshot");
+    send_health_snapshot();
   }
 }
 
-// Subscribe to ticks and schedule an early initial snapshot.
+// Subscribe to services and schedule an early initial snapshot.
 void health_relay_init(void) {
-	tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
+	app_message_register_inbox_received(inbox_received_handler);
 	s_startup_timer = app_timer_register(1000, startup_timer_handler, NULL);
 }
 
 // Unsubscribe from services and cancel any pending timers.
 void health_relay_deinit(void) {
-	tick_timer_service_unsubscribe();
+	app_message_deregister_callbacks();
 	if (s_startup_timer) {
 		app_timer_cancel(s_startup_timer);
 		s_startup_timer = NULL;

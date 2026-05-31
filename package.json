@@ -20,6 +20,7 @@
             "temp_min",
             "weather_codes",
             "req_weather",
+            "req_health",
             "HEALTH_STEPS",
             "HEART_RATE_BPM"
         ],
