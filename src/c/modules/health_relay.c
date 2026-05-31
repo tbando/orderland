@@ -25,9 +25,6 @@
 
 static AppTimer *s_retry_timer = NULL;
 static AppTimer *s_startup_timer = NULL;
-static AppTimer *s_poll_timer = NULL;
-
-#define POLL_INTERVAL_MS (5 * 60 * 1000)
 
 static void schedule_retry(uint32_t ms);
 
@@ -41,7 +38,6 @@ static void send_health_snapshot(void) {
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
 	if (result != APP_MSG_OK) {
-		// Typical at startup if the channel is not ready yet.
 		APP_LOG(APP_LOG_LEVEL_WARNING, "RELAY: outbox_begin failed: %d (retry)", (int)result);
 		schedule_retry(2000);
 		return;
@@ -52,19 +48,12 @@ static void send_health_snapshot(void) {
 
 	result = app_message_outbox_send();
 	if (result != APP_MSG_OK) {
-		// Keep retry serialized via one timer so we never create a retry storm.
 		APP_LOG(APP_LOG_LEVEL_WARNING, "RELAY: outbox_send failed: %d (retry)", (int)result);
 		schedule_retry(2000);
 		return;
 	}
 
 	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sent steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
-}
-
-static void poll_timer_handler(void *context) {
-	(void)context;
-	send_health_snapshot();
-	s_poll_timer = app_timer_register(POLL_INTERVAL_MS, poll_timer_handler, NULL);
 }
 
 static void retry_timer_handler(void *context) {
@@ -74,7 +63,6 @@ static void retry_timer_handler(void *context) {
 }
 
 static void schedule_retry(uint32_t ms) {
-	// At most one pending retry at a time.
 	if (s_retry_timer)
 		return;
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
@@ -84,28 +72,27 @@ static void startup_timer_handler(void *context) {
 	(void)context;
 	s_startup_timer = NULL;
 	send_health_snapshot();
-	// After initial snapshot, start the 5-min polling cycle.
-	s_poll_timer = app_timer_register(POLL_INTERVAL_MS, poll_timer_handler, NULL);
 }
 
-static void health_event_handler(HealthEventType type, void *context) {
-	(void)context;
-	// Only relay on events that carry data we display.
-	if (type == HealthEventHeartRateUpdate || type == HealthEventMovementUpdate) {
-		send_health_snapshot();
-	}
+// Tick handler to send data every 5 minutes, synced to the clock.
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  if (units_changed & MINUTE_UNIT) {
+    if (tick_time->tm_min % 5 == 0) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 5-min tick, sending health snapshot");
+      send_health_snapshot();
+    }
+  }
 }
 
-// Subscribe to health events and schedule an early initial snapshot.
+// Subscribe to ticks and schedule an early initial snapshot.
 void health_relay_init(void) {
-	health_service_events_subscribe(health_event_handler, NULL);
-	// Delay the first send slightly so the Alloy-owned AppMessage channel is ready.
+	tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 	s_startup_timer = app_timer_register(1000, startup_timer_handler, NULL);
 }
 
-// Unsubscribe from health events and cancel any pending timers.
+// Unsubscribe from services and cancel any pending timers.
 void health_relay_deinit(void) {
-	health_service_events_unsubscribe();
+	tick_timer_service_unsubscribe();
 	if (s_startup_timer) {
 		app_timer_cancel(s_startup_timer);
 		s_startup_timer = NULL;
@@ -113,9 +100,5 @@ void health_relay_deinit(void) {
 	if (s_retry_timer) {
 		app_timer_cancel(s_retry_timer);
 		s_retry_timer = NULL;
-	}
-	if (s_poll_timer) {
-		app_timer_cancel(s_poll_timer);
-		s_poll_timer = NULL;
 	}
 }
