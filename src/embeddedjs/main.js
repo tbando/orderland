@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V8_REAL_DEVICE_ONLY ===");
+console.log("=== BUILD MARKER: V9_STEP_DIGITS_FIX ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
@@ -16,6 +16,14 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('minutechange', (clock) => {
       application.distribute("onClockChanged", clock);
+
+      const now = clock.date || new Date();
+      if (now.getMinutes() % 5 === 0) {
+        if (isPhoneReady && globalThis.messageInstance) {
+          console.log("Alloy: Requesting health data update...");
+          globalThis.messageInstance.write({ req_health: 1 });
+        }
+      }
     });
 
     watch.addEventListener('hourchange', (clock) => {
@@ -45,11 +53,11 @@ class FaceApplicationBehavior {
     if (content) { content.variant = day; content = content.next; }
     if (content) { content.variant = 0; content = content.next; } 
     
-    // 歩数
-    if (content) { content.variant = Math.idiv(steps, 10000); content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 1000); content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 100); content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 10); content = content.next; }
+    // 歩数 (5桁: 00000)
+    if (content) { content.variant = Math.idiv(steps, 10000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 1000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 100) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 10) % 10; content = content.next; }
     if (content) { content.variant = steps % 10; content = content.next; }
 
     // 現在の天気、最高気温、最低気温の順にUIマッピング
@@ -83,7 +91,7 @@ const app = new FaceApplication(null, {
 });
 
 globalThis.messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
   onReadable() {
     isPhoneReady = true; 
