@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V14_STABLE_NO_JS_WRITE ===");
+console.log("=== BUILD MARKER: V15_FINAL_VERIFY ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -22,8 +22,7 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      // Weather relies on PKJS requesting, which happens automatically on PKJS side periodically.
-      // JS-side write() is disabled here to avoid stability issues.
+      // Weather relies on PKJS side automatic updates.
     });
   }
   
@@ -36,33 +35,38 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
-    // 基本時計・カレンダー描画
+    // 1-4: Hours/Minutes
     if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
     if (content) { content.variant = hours % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
     if (content) { content.variant = minutes % 10; content = content.next; }
+    
+    // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
     if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
     if (content) { content.variant = date % 10; content = content.next; }
     if (content) { content.variant = day; content = content.next; }
+    
+    // 9: Step Label
     if (content) { content.variant = 0; content = content.next; } 
     
-    // 歩数 (5桁: 00000)
+    // 10-14: Steps (5 digits)
     let s = Number(steps);
+    // console.log("Drawing steps: " + s);
     if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
     if (content) { content.variant = s % 10; content = content.next; }
 
-    // 現在の天気、最高気温、最低気温
+    // 15-19: Weather/Temp
     if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
     if (content) { content.variant = tempMax % 10; content = content.next; }
     if (content) { content.variant = 10; content = content.next; }
     if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
     if (content) { content.variant = tempMin % 10; content = content.next; }
 
-    // 復元された24時間分の配列をループ
+    // 20-43: Hourly Weather
     for (let i = 0; i < 24; i++) {
       if (content) {
         content.variant = weatherHourlyCodes[i];
@@ -91,6 +95,7 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
+    console.log("Alloy: onReadable triggered");
     
     msg.forEach((value, key) => {
       if (key === "weather") {
@@ -112,7 +117,7 @@ globalThis.messageInstance = new Message({
       } else if (key === "HEALTH_STEPS") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy received steps: " + steps);
+        console.log("Alloy: Internal steps updated to: " + steps);
       }
     });
 
