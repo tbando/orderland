@@ -32,7 +32,7 @@ static void send_health_snapshot(void) {
   int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
   int32_t steps_7d = (int32_t)health_service_sum(HealthMetricStepCount, now - (7 * SECONDS_PER_DAY), now);
   int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  int32_t kcal_today = (int32_t)health_service_sum_today(HealthMetricRestingKiloCalories);
+  int32_t kcal_today = (int32_t)health_service_sum_today(HealthMetricRestingKCalories);
   
   APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: DATA -> steps[today:%ld, 24h:%ld, 7d:%ld] dist:%ld kcal:%ld", 
           (long)steps_today, (long)steps_24h, (long)steps_7d, (long)dist_today, (long)kcal_today);
@@ -105,7 +105,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V4_DEEP_DEBUG ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V5_FIX_KCAL_TYPO ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

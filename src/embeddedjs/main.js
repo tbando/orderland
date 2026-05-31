@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V4_DEEP_DEBUG ===");
+console.log("=== BUILD MARKER: V5_FIX_KCAL_TYPO ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
