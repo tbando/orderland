@@ -1,9 +1,9 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V13_CACHE_STORAGE ===");
+console.log("=== BUILD MARKER: V14_STABLE_NO_JS_WRITE ===");
 
-// キャッシュから初期値を読み込み
+// Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
 let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
@@ -22,13 +22,8 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      if (isPhoneReady && globalThis.messageInstance) {
-        try {
-          globalThis.messageInstance.write({ req_weather: 1 });
-        } catch (e) {
-          console.log("Alloy: req_weather write failed: " + e);
-        }
-      }
+      // Weather relies on PKJS requesting, which happens automatically on PKJS side periodically.
+      // JS-side write() is disabled here to avoid stability issues.
     });
   }
   
@@ -53,20 +48,21 @@ class FaceApplicationBehavior {
     if (content) { content.variant = 0; content = content.next; } 
     
     // 歩数 (5桁: 00000)
-    if (content) { content.variant = Math.idiv(steps, 10000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 1000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 100) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(steps, 10) % 10; content = content.next; }
-    if (content) { content.variant = steps % 10; content = content.next; }
+    let s = Number(steps);
+    if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
+    if (content) { content.variant = s % 10; content = content.next; }
 
-    // 現在の天気、最高気温、最低気温の順にUIマッピング
+    // 現在の天気、最高気温、最低気温
     if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
     if (content) { content.variant = tempMax % 10; content = content.next; }
     if (content) { content.variant = 10; content = content.next; }
     if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
     if (content) { content.variant = tempMin % 10; content = content.next; }
 
-    // 復元された24時間分の配列をループで安全に適用
+    // 復元された24時間分の配列をループ
     for (let i = 0; i < 24; i++) {
       if (content) {
         content.variant = weatherHourlyCodes[i];
@@ -114,9 +110,9 @@ globalThis.messageInstance = new Message({
         }
         localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS") {
-        steps = value;
-        localStorage.setItem("steps", value.toString());
-        console.log("Set steps to: " + steps);
+        steps = Number(value);
+        localStorage.setItem("steps", steps.toString());
+        console.log("Alloy received steps: " + steps);
       }
     });
 

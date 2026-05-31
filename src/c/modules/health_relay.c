@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — Final Stable Version
+// modules/health_relay — V14 Stable Final
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -42,16 +42,18 @@ static void schedule_retry(uint32_t ms) {
 }
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
+  // Respecting any incoming req_health if JS ever starts working
   if (dict_find(iter, MESSAGE_KEY_req_health)) {
     send_health_snapshot();
   }
 }
 
-// Tick handler ensures data is sent every 5 mins.
-// This serves as the robust baseline, bypassing JS-side limitations.
+// Robust C-side polling every 5 minutes. 
+// This is our primary trigger since JS write() has issues.
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     if (tick_time->tm_min % 5 == 0) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 5-min update trigger");
       send_health_snapshot();
     }
   }
@@ -70,7 +72,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: FINAL_STABLE ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V14_STABLE_NO_JS_WRITE ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
