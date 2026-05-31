@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V8 Real Device Check Version
+// modules/health_relay — V12 Hybrid Version
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -11,26 +11,8 @@ static AppTimer *s_startup_timer = NULL;
 
 static void schedule_retry(uint32_t ms);
 
-static const char* get_mask_string(HealthServiceAccessibilityMask mask) {
-  bool available = mask & 0x01;
-  bool accessible = mask & 0x02;
-  if (available && accessible) return "OK";
-  if (available) return "DENIED (Check Watch Settings -> Health)";
-  return "N/A";
-}
-
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
-  time_t now = time(NULL);
-  
-  // 1. Log System Config
-  MeasurementSystem sys = health_service_get_measurement_system_for_display(HealthMetricStepCount);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Unit System: %s", (sys == MeasurementSystemMetric) ? "Metric" : "Imperial");
-
-  HealthServiceAccessibilityMask m_steps = health_service_metric_accessible(HealthMetricStepCount, now-60, now);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY MASK: Steps: %s", get_mask_string(m_steps));
-
-  // 2. Fetch Values
 	int32_t steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
 	int32_t heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
 
@@ -45,7 +27,7 @@ static void send_health_snapshot(void) {
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
 	app_message_outbox_send();
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Sent to JS -> Steps:%ld HR:%ld", (long)steps, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Snapshot Sent (Steps:%ld HR:%ld)", (long)steps, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {
@@ -61,8 +43,18 @@ static void schedule_retry(uint32_t ms) {
 
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   if (dict_find(iter, MESSAGE_KEY_req_health)) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Received req_health");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Received JS request");
     send_health_snapshot();
+  }
+}
+
+// Tick handler as fallback (every 5 mins) in case JS trigger fails
+static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
+  if (units_changed & MINUTE_UNIT) {
+    if (tick_time->tm_min % 5 == 0) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 5-min tick fallback");
+      send_health_snapshot();
+    }
   }
 }
 
@@ -73,22 +65,22 @@ static void startup_timer_handler(void *context) {
 }
 
 static void health_event_handler(HealthEventType event, void *context) {
-  // Any event (even 0: SignificantUpdate) is a sign the service is alive
   if (event == HealthEventSignificantUpdate) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Significant Health Update detected");
     send_health_snapshot();
   }
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V11_LOG_FULL_MSG ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V12_FIX_JS_EXCEPTION ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
+  tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 	s_startup_timer = app_timer_register(5000, startup_timer_handler, NULL);
 }
 
 void health_relay_deinit(void) {
+  tick_timer_service_unsubscribe();
 #ifdef PBL_HEALTH
   health_service_events_unsubscribe();
 #endif

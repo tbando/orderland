@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V11_LOG_FULL_MSG ===");
+console.log("=== BUILD MARKER: V12_FIX_JS_EXCEPTION ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
@@ -20,15 +20,23 @@ class FaceApplicationBehavior {
       const now = clock.date || new Date();
       if (now.getMinutes() % 5 === 0) {
         if (isPhoneReady && globalThis.messageInstance) {
-          console.log("Alloy: Requesting health data update...");
-          globalThis.messageInstance.write({ req_health: 1 });
+          try {
+            console.log("Alloy: Requesting health data...");
+            globalThis.messageInstance.write({ req_health: 1 });
+          } catch (e) {
+            console.log("Alloy: req_health write failed: " + e);
+          }
         }
       }
     });
 
     watch.addEventListener('hourchange', (clock) => {
       if (isPhoneReady && globalThis.messageInstance) {
-        globalThis.messageInstance.write({ req_weather: 1 });
+        try {
+          globalThis.messageInstance.write({ req_weather: 1 });
+        } catch (e) {
+          console.log("Alloy: req_weather write failed: " + e);
+        }
       }
     });
   }
@@ -96,10 +104,8 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
-    console.log("Alloy: msg received: " + JSON.stringify(msg));
     
     msg.forEach((value, key) => {
-      console.log("  key: " + key + ", val: " + value);
       if (key === "weather") {
         weatherCurrentCode = value;
       } else if (key === "temp_max") {
@@ -107,22 +113,19 @@ globalThis.messageInstance = new Message({
       } else if (key === "temp_min") {
         tempMin = value;
       } else if (key === "weather_codes") {
-        // 文字列から24個の整数配列へとクリーンに復元
         const strArray = value.split(",");
         weatherHourlyCodes = [];
         for (let i = 0; i < strArray.length; i++) {
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
-        console.log("Watch successfully restored 24h data: " + JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS") {
         steps = value;
         console.log("Set steps to: " + steps);
       } else if (key === "HEART_RATE_BPM") {
-        console.log("Received heart rate: " + value);
+        // 心拍数
       }
     });
 
-    // 正確な気温と配列が揃った状態で画面を一斉再描画
     app.distribute("onClockChanged", { date: new Date() });
   }
 });
