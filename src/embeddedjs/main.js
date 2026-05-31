@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V9_STEP_DIGITS_FIX ===");
+console.log("=== BUILD MARKER: V10_FIX_UNIT_FUNC ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;

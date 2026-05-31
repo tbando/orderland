@@ -24,7 +24,7 @@ static void send_health_snapshot(void) {
   time_t now = time(NULL);
   
   // 1. Log System Config
-  MeasurementSystem sys = health_service_get_measurement_system();
+  MeasurementSystem sys = health_service_get_measurement_system_for_display();
   APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Unit System: %s", (sys == MeasurementSystemMetric) ? "Metric" : "Imperial");
 
   HealthServiceAccessibilityMask m_steps = health_service_metric_accessible(HealthMetricStepCount, now-60, now);
@@ -81,7 +81,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V8_REAL_DEVICE_ONLY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V10_FIX_UNIT_FUNC ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
