@@ -4,6 +4,7 @@ import Message from "pebble/message";
 let weatherCurrentCode = 0;
 let tempMax = 0;
 let tempMin = 0;
+let steps = 0;
 let weatherHourlyCodes = new Array(24).fill(0); 
 let isPhoneReady = false;
 
@@ -42,6 +43,13 @@ class FaceApplicationBehavior {
     if (content) { content.variant = day; content = content.next; }
     if (content) { content.variant = 0; content = content.next; } 
     
+    // 歩数
+    if (content) { content.variant = Math.idiv(steps, 10000); content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 1000); content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 100); content = content.next; }
+    if (content) { content.variant = Math.idiv(steps, 10); content = content.next; }
+    if (content) { content.variant = steps % 10; content = content.next; }
+
     // 現在の天気、最高気温、最低気温の順にUIマッピング
     if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
     if (content) { content.variant = tempMax % 10; content = content.next; }
@@ -95,6 +103,7 @@ globalThis.messageInstance = new Message({
         }
         console.log("Watch successfully restored 24h data: " + JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS") {
+        steps = value;
         console.log("Received steps: " + value);
       } else if (key === "HEART_RATE_BPM") {
         console.log("Received heart rate: " + value);

@@ -30,25 +30,21 @@ static void schedule_retry(uint32_t ms);
 
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
-	int32_t steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
-  
-  // If today is 0, try to see if there's ANY data in the last 24 hours
-  // This helps identify if it's a "start of today" calculation issue.
-  if (steps == 0) {
-    time_t now = time(NULL);
-    steps = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sum_today was 0, last 24h sum: %ld", (long)steps);
+	// Total steps since midnight today
+	int32_t steps = 0;
+  HealthServiceAccessibilityMask mask = health_service_metric_accessible(HealthMetricStepCount, 
+                                                                         time_start_of_today(), 
+                                                                         time(NULL));
+  if (mask & HealthServiceAccessibilityMaskAvailable) {
+    steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "RELAY: Step count not accessible (mask: %d)", (int)mask);
   }
 
 	int32_t heart_rate = 0;
   #if PBL_API_EXISTS(health_service_peek_current_value)
     heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
   #endif
-
-  // Additional debug info
-  bool any_data = health_service_any_data_available();
-  int32_t distance = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: any_data=%d, distance=%ld", (int)any_data, (long)distance);
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -68,7 +64,7 @@ static void send_health_snapshot(void) {
 		return;
 	}
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: final steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sampled steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {

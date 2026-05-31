@@ -46,6 +46,12 @@ const Layout = Container.template($ => ({
     Content($, { left:150-2, top:50, skin:daysSkin }),
     // step label
     Content($, { left:0+2, top:110, skin:labelsSkin }),
+    // step
+    Content($, { left:12*0+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:12*1+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:12*2+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:12*3+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:12*4+2, top:135, skin:smallDigitsSkin }),
 
     // temp max
     Content($, { left:0+2, bottom:5+24, skin:smallRedDigitsSkin }),
