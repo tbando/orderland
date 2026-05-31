@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — Advanced Debug Version
+// modules/health_relay — V3 Deep Search Version
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -13,17 +13,19 @@ static void schedule_retry(uint32_t ms);
 
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
-	// 1. Try today's total steps
-	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sum_today = %ld", (long)steps_today);
+  time_t now = time(NULL);
   
-  // 2. If today is 0, check last 24h as fallback/debug
-  int32_t steps_24h = 0;
-  if (steps_today == 0) {
-    time_t now = time(NULL);
-    steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 24h sum = %ld", (long)steps_24h);
-  }
+	// 1. Try multiple ranges
+	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
+  int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
+  int32_t steps_week = (int32_t)health_service_sum(HealthMetricStepCount, now - (7 * SECONDS_PER_DAY), now);
+  
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: steps [today:%ld] [24h:%ld] [7d:%ld]", 
+          (long)steps_today, (long)steps_24h, (long)steps_week);
+  
+  // 2. Try distance
+  int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: dist_today=%ld", (long)dist_today);
 
   // 3. Heart rate
 	int32_t heart_rate = 0;
@@ -31,12 +33,10 @@ static void send_health_snapshot(void) {
   heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
 #endif
 
-  // 4. Distance for deeper debug
-  int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: dist_today=%ld", (long)dist_today);
-
-  // Use the best available step count for the snapshot
-  int32_t steps_to_send = steps_today > 0 ? steps_today : steps_24h;
+  // Pick the best non-zero step count
+  int32_t steps_to_send = steps_today;
+  if (steps_to_send <= 0) steps_to_send = steps_24h;
+  if (steps_to_send <= 0) steps_to_send = steps_week;
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -72,7 +72,6 @@ static void schedule_retry(uint32_t ms) {
 
 // Inbox received callback. Responds to req_health from JS side.
 static void inbox_received_handler(DictionaryIterator *iter, void *context) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "RELAY: Inbox received something!");
   Tuple *req_health_tuple = dict_find(iter, MESSAGE_KEY_req_health);
   if (req_health_tuple) {
     APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Received req_health trigger from JS");
@@ -82,11 +81,7 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  
-  // Re-register inbox handler with a delay, hoping to beat Alloy's hijack
   app_message_register_inbox_received(inbox_received_handler);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Inbox handler registered (delayed)");
-  
 	send_health_snapshot();
 }
 
@@ -94,12 +89,11 @@ static void startup_timer_handler(void *context) {
 static void health_event_handler(HealthEventType event, void *context) {}
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V2_FIX_BUILD_AVG ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V3_7DAY_SEARCH ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
-  // Delay initial send and handler registration to let Alloy settle
-	s_startup_timer = app_timer_register(5000, startup_timer_handler, NULL);
+	s_startup_timer = app_timer_register(8000, startup_timer_handler, NULL);
 }
 
 void health_relay_deinit(void) {
