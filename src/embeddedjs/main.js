@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V10_FIX_UNIT_FUNC ===");
+console.log("=== BUILD MARKER: V11_LOG_FULL_MSG ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;
@@ -96,8 +96,10 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
+    console.log("Alloy: msg received: " + JSON.stringify(msg));
     
     msg.forEach((value, key) => {
+      console.log("  key: " + key + ", val: " + value);
       if (key === "weather") {
         weatherCurrentCode = value;
       } else if (key === "temp_max") {
@@ -114,7 +116,7 @@ globalThis.messageInstance = new Message({
         console.log("Watch successfully restored 24h data: " + JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS") {
         steps = value;
-        console.log("Received steps: " + value);
+        console.log("Set steps to: " + steps);
       } else if (key === "HEART_RATE_BPM") {
         console.log("Received heart rate: " + value);
       }
