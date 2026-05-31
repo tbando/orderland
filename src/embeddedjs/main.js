@@ -1,13 +1,16 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: FINAL_STABLE ===");
+console.log("=== BUILD MARKER: V13_CACHE_STORAGE ===");
 
-let weatherCurrentCode = 0;
-let tempMax = 0;
-let tempMin = 0;
-let steps = 0;
-let weatherHourlyCodes = new Array(24).fill(0); 
+// キャッシュから初期値を読み込み
+let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
+let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
+let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
+let steps = parseInt(localStorage.getItem("steps") || "0");
+let weatherHourlyCodes = JSON.parse(localStorage.getItem("weatherHourlyCodes") || "[]");
+if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
+
 let isPhoneReady = false;
 
 class FaceApplicationBehavior {
@@ -15,10 +18,10 @@ class FaceApplicationBehavior {
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
-          application.distribute("onClockChanged", clock);
-        });
+      application.distribute("onClockChanged", clock);
+    });
 
-        watch.addEventListener('hourchange', (clock) => {
+    watch.addEventListener('hourchange', (clock) => {
       if (isPhoneReady && globalThis.messageInstance) {
         try {
           globalThis.messageInstance.write({ req_weather: 1 });
@@ -96,21 +99,24 @@ globalThis.messageInstance = new Message({
     msg.forEach((value, key) => {
       if (key === "weather") {
         weatherCurrentCode = value;
+        localStorage.setItem("weatherCurrentCode", value.toString());
       } else if (key === "temp_max") {
         tempMax = value;
+        localStorage.setItem("tempMax", value.toString());
       } else if (key === "temp_min") {
         tempMin = value;
+        localStorage.setItem("tempMin", value.toString());
       } else if (key === "weather_codes") {
         const strArray = value.split(",");
         weatherHourlyCodes = [];
         for (let i = 0; i < strArray.length; i++) {
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
+        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS") {
         steps = value;
+        localStorage.setItem("steps", value.toString());
         console.log("Set steps to: " + steps);
-      } else if (key === "HEART_RATE_BPM") {
-        // 心拍数
       }
     });
 
