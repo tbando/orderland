@@ -30,10 +30,21 @@ static void schedule_retry(uint32_t ms);
 
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
-	// On emulators these often return 0. Device testing is required for
-	// meaningful values.
-	int32_t steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
-	int32_t heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
+	// Total steps since midnight today
+	int32_t steps = 0;
+  HealthServiceAccessibilityMask mask = health_service_metric_accessible(HealthMetricStepCount, 
+                                                                         time_start_of_today(), 
+                                                                         time(NULL));
+  if (mask & HealthServiceAccessibilityMaskAvailable) {
+    steps = (int32_t)health_service_sum_today(HealthMetricStepCount);
+  } else {
+    APP_LOG(APP_LOG_LEVEL_WARNING, "RELAY: Step count not accessible (mask: %d)", (int)mask);
+  }
+
+	int32_t heart_rate = 0;
+  #if PBL_API_EXISTS(health_service_peek_current_value)
+    heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
+  #endif
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -53,7 +64,7 @@ static void send_health_snapshot(void) {
 		return;
 	}
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sent steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sampled steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {
