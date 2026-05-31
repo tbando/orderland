@@ -1,6 +1,8 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
+console.log("=== BUILD MARKER: V1_DEBUG_TIME_METRICS ===");
+
 let weatherCurrentCode = 0;
 let tempMax = 0;
 let tempMin = 0;
