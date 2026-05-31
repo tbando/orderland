@@ -85,15 +85,27 @@ static void inbox_received_handler(DictionaryIterator *iter, void *context) {
   }
 }
 
+// Dummy handler just to keep the service active
+static void health_event_handler(HealthEventType event, void *context) {
+  // Do nothing. We just need to be subscribed so the system collects data.
+}
+
 // Subscribe to services and schedule an early initial snapshot.
 void health_relay_init(void) {
 	app_message_register_inbox_received(inbox_received_handler);
+#ifdef PBL_HEALTH
+  // Crucial: subscribing initializes the HealthService in the background
+  health_service_events_subscribe(health_event_handler, NULL);
+#endif
 	s_startup_timer = app_timer_register(1500, startup_timer_handler, NULL);
 }
 
 // Unsubscribe from services and cancel any pending timers.
 void health_relay_deinit(void) {
 	app_message_deregister_callbacks();
+#ifdef PBL_HEALTH
+  health_service_events_unsubscribe();
+#endif
 	if (s_startup_timer) {
 		app_timer_cancel(s_startup_timer);
 		s_startup_timer = NULL;
