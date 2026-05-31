@@ -73,7 +73,7 @@ const app = new FaceApplication(null, {
 });
 
 globalThis.messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather"], 
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
   onReadable() {
     isPhoneReady = true; 
@@ -94,6 +94,10 @@ globalThis.messageInstance = new Message({
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
         console.log("Watch successfully restored 24h data: " + JSON.stringify(weatherHourlyCodes));
+      } else if (key === "HEALTH_STEPS") {
+        console.log("Received steps: " + value);
+      } else if (key === "HEART_RATE_BPM") {
+        console.log("Received heart rate: " + value);
       }
     });
 

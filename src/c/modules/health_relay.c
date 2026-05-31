@@ -25,6 +25,9 @@
 
 static AppTimer *s_retry_timer = NULL;
 static AppTimer *s_startup_timer = NULL;
+static AppTimer *s_poll_timer = NULL;
+
+#define POLL_INTERVAL_MS (5 * 60 * 1000)
 
 static void schedule_retry(uint32_t ms);
 
@@ -58,6 +61,12 @@ static void send_health_snapshot(void) {
 	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sent steps=%ld bpm=%ld", (long)steps, (long)heart_rate);
 }
 
+static void poll_timer_handler(void *context) {
+	(void)context;
+	send_health_snapshot();
+	s_poll_timer = app_timer_register(POLL_INTERVAL_MS, poll_timer_handler, NULL);
+}
+
 static void retry_timer_handler(void *context) {
 	(void)context;
 	s_retry_timer = NULL;
@@ -75,6 +84,8 @@ static void startup_timer_handler(void *context) {
 	(void)context;
 	s_startup_timer = NULL;
 	send_health_snapshot();
+	// After initial snapshot, start the 5-min polling cycle.
+	s_poll_timer = app_timer_register(POLL_INTERVAL_MS, poll_timer_handler, NULL);
 }
 
 static void health_event_handler(HealthEventType type, void *context) {
@@ -102,5 +113,9 @@ void health_relay_deinit(void) {
 	if (s_retry_timer) {
 		app_timer_cancel(s_retry_timer);
 		s_retry_timer = NULL;
+	}
+	if (s_poll_timer) {
+		app_timer_cancel(s_poll_timer);
+		s_poll_timer = NULL;
 	}
 }

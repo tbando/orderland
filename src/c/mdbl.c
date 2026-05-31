@@ -1,5 +1,5 @@
 #include <pebble.h>
-//#include "modules/health_relay.h"
+#include "modules/health_relay.h"
 
 //
 // C entrypoint
@@ -13,12 +13,12 @@ int main(void) {
 
 	// Start the health relay, which samples health data and sends it to the phone
 	// to be relayed back to watch JS.
-	//health_relay_init();
+	health_relay_init();
 
 	// Start the Alloy runtime.
 	moddable_createMachine(NULL);
 
 	// Clean up the relay before exit.
-	//health_relay_deinit();
+	health_relay_deinit();
 	window_destroy(w);
 }

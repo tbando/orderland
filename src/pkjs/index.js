@@ -8,6 +8,15 @@ Pebble.addEventListener('appmessage', function(e) {
     console.log('pkjs: Received req_weather from watch!');
     requestLocationAndWeather();
   }
+
+  // Relay health data back to the watch (Alloy JS)
+  if (e.payload.HEALTH_STEPS !== undefined || e.payload.HEART_RATE_BPM !== undefined) {
+    console.log('pkjs: Relaying health data to Alloy: ' + JSON.stringify(e.payload));
+    Pebble.sendAppMessage(e.payload,
+      function() { console.log('pkjs: Health relay success!'); },
+      function(err) { console.log('pkjs: Health relay failed: ' + JSON.stringify(err)); }
+    );
+  }
 });
 
 function requestLocationAndWeather() {
