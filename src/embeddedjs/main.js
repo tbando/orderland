@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V1_DEBUG_TIME_METRICS ===");
+console.log("=== BUILD MARKER: V2_FIX_BUILD_AVG ===");
 
 let weatherCurrentCode = 0;
 let tempMax = 0;

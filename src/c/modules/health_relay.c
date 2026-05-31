@@ -13,39 +13,30 @@ static void schedule_retry(uint32_t ms);
 
 // Send the current health snapshot to the phone. Retries on failure.
 static void send_health_snapshot(void) {
-  // --- 1. System Info Debug ---
-  time_t now = time(NULL);
-  time_t start_today = time_start_of_today();
-  struct tm *t = localtime(&now);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Time=%02d:%02d:%02d, now=%ld, start=%ld", 
-          t->tm_hour, t->tm_min, t->tm_sec, (long)now, (long)start_today);
-
-#ifdef PBL_HEALTH
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: PBL_HEALTH is DEFINED");
-#else
-  APP_LOG(APP_LOG_LEVEL_ERROR, "RELAY: PBL_HEALTH is NOT DEFINED!");
-#endif
-
-  // --- 2. Metric Debugging ---
+	// 1. Try today's total steps
 	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
-  int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
-  int32_t steps_avg = (int32_t)health_service_get_daily_avg_today(HealthMetricStepCount);
-  int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: sum_today = %ld", (long)steps_today);
   
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: steps_today=%ld, 24h=%ld, avg=%ld, dist=%ld", 
-          (long)steps_today, (long)steps_24h, (long)steps_avg, (long)dist_today);
-
-  // Use the best available step count for the snapshot
-  int32_t steps_to_send = steps_today;
-  if (steps_to_send == 0 && steps_24h > 0) {
-    steps_to_send = steps_24h;
-    APP_LOG(APP_LOG_LEVEL_WARNING, "RELAY: Using 24h fallback for steps");
+  // 2. If today is 0, check last 24h as fallback/debug
+  int32_t steps_24h = 0;
+  if (steps_today == 0) {
+    time_t now = time(NULL);
+    steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: 24h sum = %ld", (long)steps_24h);
   }
 
+  // 3. Heart rate
 	int32_t heart_rate = 0;
 #ifdef PBL_HEALTH
   heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
 #endif
+
+  // 4. Distance for deeper debug
+  int32_t dist_today = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: dist_today=%ld", (long)dist_today);
+
+  // Use the best available step count for the snapshot
+  int32_t steps_to_send = steps_today > 0 ? steps_today : steps_24h;
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -65,7 +56,7 @@ static void send_health_snapshot(void) {
 		return;
 	}
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Sent steps=%ld bpm=%ld", (long)steps_to_send, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: Final sent steps=%ld bpm=%ld", (long)steps_to_send, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {
@@ -103,7 +94,7 @@ static void startup_timer_handler(void *context) {
 static void health_event_handler(HealthEventType event, void *context) {}
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V1_DEBUG_TIME_METRICS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V2_FIX_BUILD_AVG ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
