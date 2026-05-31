@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V16_FINAL_SYNC ===");
+console.log("=== BUILD MARKER: V17_FIX_RECEIVER_CONFLICT ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -22,7 +22,7 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      // Weather relies on PKJS side automatic updates.
+      // Weather relies on PKJS automatic background updates.
     });
   }
   
@@ -52,7 +52,6 @@ class FaceApplicationBehavior {
     
     // 10-14: Steps (5 digits)
     let s = Number(steps);
-    // console.log("Drawing steps: " + s);
     if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
@@ -89,8 +88,6 @@ const app = new FaceApplication(null, {
   pixels: screen.width * 4,
 });
 
-// "10006" is the typical internal key generated for "HEALTH_STEPS" by Pebble SDK
-// "10007" is the typical internal key generated for "HEART_RATE_BPM"
 globalThis.messageInstance = new Message({
   keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM", "10006", "10007"], 
   
@@ -119,9 +116,7 @@ globalThis.messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Internal steps updated to: " + steps);
-      } else if (key === "HEART_RATE_BPM" || key === "10007") {
-        console.log("Alloy: Heart rate updated to: " + value);
+        console.log("Alloy: UI update for steps: " + steps);
       }
     });
 

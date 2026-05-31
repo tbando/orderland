@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V15 Final Verify
+// modules/health_relay — V17 Fix Conflict Version
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -27,7 +27,7 @@ static void send_health_snapshot(void) {
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
 	app_message_outbox_send();
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V15: Sent Steps:%ld HR:%ld", (long)steps, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V17: Push (Steps:%ld HR:%ld)", (long)steps, (long)heart_rate);
 }
 
 static void retry_timer_handler(void *context) {
@@ -41,17 +41,14 @@ static void schedule_retry(uint32_t ms) {
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
 }
 
-static void inbox_received_handler(DictionaryIterator *iter, void *context) {
-  if (dict_find(iter, MESSAGE_KEY_req_health)) {
-    send_health_snapshot();
-  }
-}
+// NOTE: No inbox_received_handler here! 
+// Registering one in C steals all incoming messages from Alloy JS.
 
 // Tick handler ensures data is sent every 5 mins.
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     if (tick_time->tm_min % 5 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V15: 5-min tick");
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V17: 5-min push trigger");
       send_health_snapshot();
     }
   }
@@ -59,7 +56,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  app_message_register_inbox_received(inbox_received_handler);
+  // C-side is now "Push Only" to keep JS receiver alive.
 	send_health_snapshot();
 }
 
@@ -70,7 +67,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V15_FINAL_VERIFY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V17_FIX_RECEIVER_CONFLICT ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
