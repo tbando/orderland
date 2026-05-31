@@ -29,14 +29,13 @@ static void send_health_snapshot(void) {
 
   // 3. Heart rate
 	int32_t heart_rate = 0;
-  #if PBL_API_EXISTS(health_service_peek_current_value)
-    heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
-  #endif
+#ifdef PBL_HEALTH
+  heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
+#endif
 
-  // 4. Distance and data availability for deeper debug
-  bool any_data = health_service_any_data_available();
+  // 4. Distance for deeper debug
   int32_t distance = (int32_t)health_service_sum_today(HealthMetricWalkedDistanceMeters);
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: any_data=%d, distance=%ld", (int)any_data, (long)distance);
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY: distance=%ld", (long)distance);
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
