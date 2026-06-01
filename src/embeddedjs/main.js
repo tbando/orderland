@@ -2,10 +2,10 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Timer from "timer";
 
-console.log("=== BUILD MARKER: V29_SYNC_AND_DECONFLICT ===");
+console.log("=== BUILD MARKER: V30_BIND_WRITE_FIX ===");
 
-// 1. Initialize Message instance
-globalThis.messageInstance = new Message({
+// 1. Initialize Message instance with only manifest keys
+const messageInstance = new Message({
   keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
   onReadable() {
@@ -44,6 +44,9 @@ globalThis.messageInstance = new Message({
   }
 });
 
+// Create a safe, bound write function to avoid context-related TypeErrors
+const safeWrite = messageInstance.write ? messageInstance.write.bind(messageInstance) : null;
+
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
@@ -65,17 +68,19 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange (requesting weather)");
-      // Use 3s delay to ensure outbox is free from C-side health push at 0-min mark
+      // Increased delay to 5s to ensure total clearance of initial system congestion
       Timer.set(() => {
-        if (globalThis.messageInstance) {
+        if (safeWrite) {
           try {
             console.log("Alloy: Sending req_weather...");
-            globalThis.messageInstance.write({ req_weather: 1 });
+            safeWrite({ req_weather: 1 });
           } catch (e) {
             console.log("Alloy: write error: " + e);
           }
+        } else {
+          console.log("Alloy: Error - Message instance write is missing!");
         }
-      }, 3000);
+      }, 5000);
     });
   }
   
