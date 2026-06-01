@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V22_WEATHER_JS_HOURCHANGE ===");
+console.log("=== BUILD MARKER: V23_RESTORE_LOGS ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -15,20 +15,22 @@ let isPhoneReady = false;
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
+    console.log("Alloy: onDisplaying (application started)");
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
+      console.log("Alloy: minutechange event");
       application.distribute("onClockChanged", clock);
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      console.log("Alloy: hourchange event triggered");
+      console.log("Alloy: hourchange event");
       if (isPhoneReady && globalThis.messageInstance) {
         try {
-          console.log("Alloy: Requesting weather update via JS...");
+          console.log("Alloy: Requesting weather update...");
           globalThis.messageInstance.write({ req_weather: 1 });
         } catch (e) {
-          console.log("Alloy: Weather request failed: " + e);
+          console.log("Alloy: req_weather write error: " + e);
         }
       }
     });
@@ -36,6 +38,8 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
+    // console.log("Alloy: Redrawing UI at " + now.toLocaleTimeString());
+    
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const month = now.getMonth();
@@ -102,7 +106,7 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
-    console.log("Alloy: onReadable triggered");
+    console.log("Alloy: onReadable (message arrived)");
     
     msg.forEach((value, key) => {
       if (key === "weather") {
@@ -124,7 +128,7 @@ globalThis.messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: UI update for steps: " + steps);
+        console.log("Alloy: Updated steps variable to " + steps);
       }
     });
 
