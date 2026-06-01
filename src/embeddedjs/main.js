@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V24_LOG_WEATHER_ARRAY ===");
+console.log("=== BUILD MARKER: V25_STARTUP_WEATHER_FIX ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -25,7 +25,8 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange event");
-      if (isPhoneReady && globalThis.messageInstance) {
+      // Removed isPhoneReady guard to allow startup fetch
+      if (globalThis.messageInstance) {
         try {
           console.log("Alloy: Requesting weather update...");
           globalThis.messageInstance.write({ req_weather: 1 });

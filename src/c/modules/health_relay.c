@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V24 Log Weather Array
+// modules/health_relay — V25 Startup Weather Fix
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -30,8 +30,7 @@ static void send_health_snapshot(void) {
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
   
 	app_message_outbox_send();
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V24: Sent Steps:%ld (today:%ld, 24h:%ld) HR:%ld", 
-          (long)steps_to_send, (long)steps_today, (long)steps_24h, (long)heart_rate);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V25: Health Push (Steps:%ld)", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -48,7 +47,7 @@ static void schedule_retry(uint32_t ms) {
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     if (tick_time->tm_min % 5 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V24: 5-min tick trigger");
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V25: 5-min tick");
       send_health_snapshot();
     }
   }
@@ -56,19 +55,18 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V24: Startup initial push");
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V25: Startup push");
 	send_health_snapshot();
 }
 
 static void health_event_handler(HealthEventType event, void *context) {
   if (event == HealthEventSignificantUpdate) {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V24: Significant health update event");
     send_health_snapshot();
   }
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V24_LOG_WEATHER_ARRAY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V25_STARTUP_WEATHER_FIX ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
