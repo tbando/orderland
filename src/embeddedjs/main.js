@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V23_RESTORE_LOGS ===");
+console.log("=== BUILD MARKER: V24_LOG_WEATHER_ARRAY ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -38,7 +38,6 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
-    // console.log("Alloy: Redrawing UI at " + now.toLocaleTimeString());
     
     const hours = now.getHours();
     const minutes = now.getMinutes();
@@ -125,6 +124,7 @@ globalThis.messageInstance = new Message({
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
         localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
+        console.log("Alloy: Restored 24h weather array: " + JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
