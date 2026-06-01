@@ -1,11 +1,11 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V39_FINAL_CLEANUP ===");
+console.log("=== BUILD MARKER: V40_REMOVE_BPM ===");
 
 // 1. Initialize Message instance
 const messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS"], 
   
   onReadable() {
     const msg = this.read();

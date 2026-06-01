@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V39 Final Cleanup
+// modules/health_relay — V40 Remove BPM
 //
 
 // --- Configuration ---
@@ -23,7 +23,6 @@ static void send_update(bool request_weather) {
 	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
   int32_t steps_24h = (int32_t)health_service_sum(HealthMetricStepCount, now - SECONDS_PER_DAY, now);
   int32_t steps_to_send = (steps_today > 0) ? steps_today : steps_24h;
-	int32_t heart_rate = (int32_t)health_service_peek_current_value(HealthMetricHeartRateBPM);
 
 	DictionaryIterator *iter = NULL;
 	AppMessageResult result = app_message_outbox_begin(&iter);
@@ -33,7 +32,6 @@ static void send_update(bool request_weather) {
 	}
 
 	dict_write_int32(iter, MESSAGE_KEY_HEALTH_STEPS, steps_to_send);
-	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
@@ -79,7 +77,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V39_FINAL_CLEANUP ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V40_REMOVE_BPM ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
