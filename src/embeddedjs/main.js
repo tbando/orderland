@@ -1,9 +1,9 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V38_CONFIG_SOURCE_TRUTH ===");
+console.log("=== BUILD MARKER: V39_FINAL_CLEANUP ===");
 
-// 1. Initialize Message instance AT THE ABSOLUTE TOP
+// 1. Initialize Message instance
 const messageInstance = new Message({
   keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
@@ -11,10 +11,7 @@ const messageInstance = new Message({
     const msg = this.read();
     
     msg.forEach((value, key) => {
-      if (key === "weather") {
-        weatherCurrentCode = value;
-        localStorage.setItem("weatherCurrentCode", value.toString());
-      } else if (key === "temp_max") {
+      if (key === "temp_max") {
         tempMax = value;
         localStorage.setItem("tempMax", value.toString());
       } else if (key === "temp_min") {
@@ -38,7 +35,6 @@ const messageInstance = new Message({
 });
 
 // Global state
-let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
 let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
 let steps = parseInt(localStorage.getItem("steps") || "0");
