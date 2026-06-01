@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V21_CLEAN_TRIGGERS ===");
+console.log("=== BUILD MARKER: V22_WEATHER_JS_HOURCHANGE ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -22,7 +22,15 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      // Periodic weather updates are triggered robustly by C-side (V20+).
+      console.log("Alloy: hourchange event triggered");
+      if (isPhoneReady && globalThis.messageInstance) {
+        try {
+          console.log("Alloy: Requesting weather update via JS...");
+          globalThis.messageInstance.write({ req_weather: 1 });
+        } catch (e) {
+          console.log("Alloy: Weather request failed: " + e);
+        }
+      }
     });
   }
   
@@ -94,6 +102,7 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
+    console.log("Alloy: onReadable triggered");
     
     msg.forEach((value, key) => {
       if (key === "weather") {
@@ -115,6 +124,7 @@ globalThis.messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
+        console.log("Alloy: UI update for steps: " + steps);
       }
     });
 

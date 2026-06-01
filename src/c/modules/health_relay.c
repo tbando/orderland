@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V20 Weather Hourly C
+// modules/health_relay — V22 Weather JS Hourchange
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -11,8 +11,8 @@ static AppTimer *s_startup_timer = NULL;
 
 static void schedule_retry(uint32_t ms);
 
-// Send current health snapshot and optional weather request
-static void send_update(bool request_weather) {
+// Send current health snapshot.
+static void send_health_snapshot(void) {
   time_t now = time(NULL);
   
 	int32_t steps_today = (int32_t)health_service_sum_today(HealthMetricStepCount);
@@ -30,20 +30,14 @@ static void send_update(bool request_weather) {
 	dict_write_int32(iter, MESSAGE_KEY_HEALTH_STEPS, steps_to_send);
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
   
-  if (request_weather) {
-    dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V20: Hourly Weather + Health Request");
-  } else {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V20: 5-min Health Only Push");
-  }
-  
 	app_message_outbox_send();
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V22: Health Push (Steps:%ld)", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
 	(void)context;
 	s_retry_timer = NULL;
-	send_update(false);
+	send_health_snapshot();
 }
 
 static void schedule_retry(uint32_t ms) {
@@ -51,33 +45,29 @@ static void schedule_retry(uint32_t ms) {
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
 }
 
-// Tick handler for periodic updates
+// Tick handler only for health polling (every 5 mins).
+// Weather trigger is now back in JS hourlychange.
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
-    // Exact hour mark (0 min): Weather + Health
-    if (tick_time->tm_min == 0) {
-      send_update(true);
-    } 
-    // Every 5 min (excluding the hour mark): Health Only
-    else if (tick_time->tm_min % 5 == 0) {
-      send_update(false);
+    if (tick_time->tm_min % 5 == 0) {
+      send_health_snapshot();
     }
   }
 }
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-	send_update(true); // Initial fetch
+	send_health_snapshot();
 }
 
 static void health_event_handler(HealthEventType event, void *context) {
   if (event == HealthEventSignificantUpdate) {
-    send_update(false);
+    send_health_snapshot();
   }
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V21_CLEAN_TRIGGERS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V22_WEATHER_JS_HOURCHANGE ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
