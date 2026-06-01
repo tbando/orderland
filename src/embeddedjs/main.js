@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V20_WEATHER_HOURLY_C ===");
+console.log("=== BUILD MARKER: V21_CLEAN_TRIGGERS ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");

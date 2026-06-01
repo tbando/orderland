@@ -1,6 +1,5 @@
 Pebble.addEventListener('ready', function(e) {
-  console.log('pkjs: JS Ready! Fetching initial weather...');
-  requestLocationAndWeather();
+  console.log('pkjs: JS Ready!');
 });
 
 Pebble.addEventListener('appmessage', function(e) {
