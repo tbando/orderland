@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V34 C Trigger Only
+// modules/health_relay — V35 10min Polling
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -32,11 +32,11 @@ static void send_update(bool request_weather) {
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V34: Sending req_weather to phone...");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Hourly weather trigger");
   }
   
 	app_message_outbox_send();
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V34: Sent Steps:%ld", (long)steps_to_send);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Sent Steps:%ld", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -50,17 +50,16 @@ static void schedule_retry(uint32_t ms) {
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
 }
 
-// C-side Tick handler is now the single source of truth for all external requests
+// C-side Tick handler: 10-min health polling, 60-min weather request
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
-    // 1. Every hour (tm_min == 0): Request Weather + Push Health
+    // 1. Every hour (tm_min == 0): Weather + Health
     if (tick_time->tm_min == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V34: Hourly weather trigger");
       send_update(true);
     } 
-    // 2. Every 5 mins (except hour mark): Push Health Only
-    else if (tick_time->tm_min % 5 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V34: 5-min health trigger");
+    // 2. Every 10 mins (except hour mark): Push Health Only
+    else if (tick_time->tm_min % 10 == 0) {
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: 10-min health trigger");
       send_update(false);
     }
   }
@@ -68,7 +67,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V34: Startup trigger (Health + Weather)");
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Startup initial push");
 	send_update(true);
 }
 
@@ -79,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V34_C_TRIGGER_ONLY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V35_10MIN_POLLING ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
