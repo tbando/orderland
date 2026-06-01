@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Timer from "timer";
 
-console.log("=== BUILD MARKER: V28_DEEP_WRITE_FIX ===");
+console.log("=== BUILD MARKER: V29_SYNC_AND_DECONFLICT ===");
 
 // 1. Initialize Message instance
 globalThis.messageInstance = new Message({
@@ -30,13 +30,13 @@ globalThis.messageInstance = new Message({
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
         localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-        console.log("Alloy: Restored 24h weather array: " + JSON.stringify(weatherHourlyCodes));
+        console.log("Alloy: Weather array updated");
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: UI update for steps: " + steps);
+        console.log("Alloy: Steps updated: " + steps);
       } else if (key === "HEART_RATE_BPM" || key === "10007") {
-        console.log("Alloy: Heart rate update: " + value);
+        console.log("Alloy: HR updated: " + value);
       }
     });
 
@@ -56,27 +56,26 @@ let isPhoneReady = false;
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    console.log("Alloy: onDisplaying (application started)");
+    console.log("Alloy: onDisplaying");
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
-      console.log("Alloy: minutechange event");
       application.distribute("onClockChanged", clock);
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      console.log("Alloy: hourchange event");
-      // Use Timer to decouple write() from the event context to avoid TypeError
+      console.log("Alloy: hourchange (requesting weather)");
+      // Use 3s delay to ensure outbox is free from C-side health push at 0-min mark
       Timer.set(() => {
         if (globalThis.messageInstance) {
           try {
-            console.log("Alloy: Requesting weather update...");
+            console.log("Alloy: Sending req_weather...");
             globalThis.messageInstance.write({ req_weather: 1 });
           } catch (e) {
-            console.log("Alloy: req_weather write error: " + e);
+            console.log("Alloy: write error: " + e);
           }
         }
-      }, 1000);
+      }, 3000);
     });
   }
   
