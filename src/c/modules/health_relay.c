@@ -77,7 +77,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V40_REMOVE_BPM ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V41_CLEAN_MANIFEST ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

@@ -21,8 +21,7 @@
             "weather_codes",
             "req_weather",
             "req_health",
-            "HEALTH_STEPS",
-            "HEART_RATE_BPM"
+            "HEALTH_STEPS"
         ],
         "projectType": "moddable",
         "resources": {

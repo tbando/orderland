@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V40_REMOVE_BPM ===");
+console.log("=== BUILD MARKER: V41_CLEAN_MANIFEST ===");
 
 // 1. Initialize Message instance
 const messageInstance = new Message({
