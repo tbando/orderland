@@ -3,10 +3,11 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V37 Cleanup Unused
+// modules/health_relay — V38 Config Source Truth
 //
 
 // --- Configuration ---
+// These are the authoritative update intervals for the entire app.
 #define HEALTH_UPDATE_INTERVAL_MIN 10
 #define WEATHER_UPDATE_INTERVAL_MIN 60
 // ---------------------
@@ -37,11 +38,11 @@ static void send_update(bool request_weather) {
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V37: Weather request triggered");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V38: Weather request triggered");
   }
   
 	app_message_outbox_send();
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V37: Sent Steps:%ld", (long)steps_to_send);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V38: Sent Steps:%ld", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -81,7 +82,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V37_CLEANUP_UNUSED ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V38_CONFIG_SOURCE_TRUTH ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

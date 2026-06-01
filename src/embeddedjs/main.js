@@ -1,12 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V37_CLEANUP_UNUSED ===");
-
-// --- Configuration ---
-const HEALTH_UPDATE_INTERVAL_MIN = 10;
-const WEATHER_UPDATE_INTERVAL_MIN = 60;
-// ---------------------
+console.log("=== BUILD MARKER: V38_CONFIG_SOURCE_TRUTH ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
