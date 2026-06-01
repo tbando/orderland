@@ -1,0 +1,48 @@
+{
+    "author": "tbando",
+    "dependencies": {
+        "@moddable/pebbleproxy": "^0.1.8"
+    },
+    "keywords": [
+        "pebble-app"
+    ],
+    "name": "orderland",
+    "pebble": {
+        "capabilities": [
+            "location",
+            "health"
+        ],
+        "displayName": "Orderland",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "weather",
+            "temp_max",
+            "temp_min",
+            "weather_codes",
+            "req_weather",
+            "req_health",
+            "HEALTH_STEPS",
+            "HEART_RATE_BPM"
+        ],
+        "projectType": "moddable",
+        "resources": {
+            "media": [
+                {
+                    "file": "images/img/icon.png",
+                    "menuIcon": true,
+                    "name": "IMAGE_MENU_ICON",
+                    "type": "bitmap"
+                }
+            ]
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "emery"
+        ],
+        "uuid": "d217355a-7c0d-4663-af1d-710a75f17b52",
+        "watchapp": {
+            "watchface": true
+        }
+    },
+    "version": "0.1.0"
+}
