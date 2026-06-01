@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V29 Sync and Deconflict
+// modules/health_relay — V31 Sync and Fix
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -29,7 +29,7 @@ static void send_health_snapshot(void) {
 	dict_write_int32(iter, MESSAGE_KEY_HEART_RATE_BPM, heart_rate);
 	app_message_outbox_send();
 
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V29: Sent Steps:%ld", (long)steps_to_send);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V31: Sent Steps:%ld", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -46,7 +46,7 @@ static void schedule_retry(uint32_t ms) {
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     if (tick_time->tm_min % 5 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V29: 5-min tick");
+      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V31: 5-min tick");
       send_health_snapshot();
     }
   }
@@ -54,7 +54,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V29: Initial push");
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V31: Initial push");
 	send_health_snapshot();
 }
 
@@ -65,7 +65,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V29_SYNC_AND_DECONFLICT ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V31_FIX_JS_CONTEXT ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

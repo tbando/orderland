@@ -2,52 +2,9 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Timer from "timer";
 
-console.log("=== BUILD MARKER: V30_BIND_WRITE_FIX ===");
+console.log("=== BUILD MARKER: V31_FIX_JS_CONTEXT ===");
 
-// 1. Initialize Message instance with only manifest keys
-const messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
-  
-  onReadable() {
-    isPhoneReady = true; 
-    const msg = this.read();
-    console.log("Alloy: onReadable triggered");
-    
-    msg.forEach((value, key) => {
-      if (key === "weather") {
-        weatherCurrentCode = value;
-        localStorage.setItem("weatherCurrentCode", value.toString());
-      } else if (key === "temp_max") {
-        tempMax = value;
-        localStorage.setItem("tempMax", value.toString());
-      } else if (key === "temp_min") {
-        tempMin = value;
-        localStorage.setItem("tempMin", value.toString());
-      } else if (key === "weather_codes") {
-        const strArray = value.split(",");
-        weatherHourlyCodes = [];
-        for (let i = 0; i < strArray.length; i++) {
-          weatherHourlyCodes.push(parseInt(strArray[i], 10));
-        }
-        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-        console.log("Alloy: Weather array updated");
-      } else if (key === "HEALTH_STEPS" || key === "10006") {
-        steps = Number(value);
-        localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Steps updated: " + steps);
-      } else if (key === "HEART_RATE_BPM" || key === "10007") {
-        console.log("Alloy: HR updated: " + value);
-      }
-    });
-
-    app.distribute("onClockChanged", { date: new Date() });
-  }
-});
-
-// Create a safe, bound write function to avoid context-related TypeErrors
-const safeWrite = messageInstance.write ? messageInstance.write.bind(messageInstance) : null;
-
-// Load initial values from cache
+// Global variables
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
 let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
@@ -59,7 +16,48 @@ let isPhoneReady = false;
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    console.log("Alloy: onDisplaying");
+    console.log("Alloy: onDisplaying (application started)");
+    
+    // Initialize Message instance here to ensure Alloy is fully ready
+    globalThis.messageInstance = new Message({
+      keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+      
+      onReadable() {
+        isPhoneReady = true; 
+        const msg = this.read();
+        console.log("Alloy: onReadable (message received)");
+        
+        msg.forEach((value, key) => {
+          if (key === "weather") {
+            weatherCurrentCode = value;
+            localStorage.setItem("weatherCurrentCode", value.toString());
+          } else if (key === "temp_max") {
+            tempMax = value;
+            localStorage.setItem("tempMax", value.toString());
+          } else if (key === "temp_min") {
+            tempMin = value;
+            localStorage.setItem("tempMin", value.toString());
+          } else if (key === "weather_codes") {
+            const strArray = value.split(",");
+            weatherHourlyCodes = [];
+            for (let i = 0; i < strArray.length; i++) {
+              weatherHourlyCodes.push(parseInt(strArray[i], 10));
+            }
+            localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
+            console.log("Alloy: Weather array updated");
+          } else if (key === "HEALTH_STEPS" || key === "10006") {
+            steps = Number(value);
+            localStorage.setItem("steps", steps.toString());
+            console.log("Alloy: Steps updated to: " + steps);
+          } else if (key === "HEART_RATE_BPM" || key === "10007") {
+            console.log("Alloy: Heart rate updated to: " + value);
+          }
+        });
+
+        application.distribute("onClockChanged", { date: new Date() });
+      }
+    });
+
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
@@ -68,19 +66,17 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange (requesting weather)");
-      // Increased delay to 5s to ensure total clearance of initial system congestion
+      // Delay to avoid collision with startup health push
       Timer.set(() => {
-        if (safeWrite) {
+        if (globalThis.messageInstance && globalThis.messageInstance.write) {
           try {
             console.log("Alloy: Sending req_weather...");
-            safeWrite({ req_weather: 1 });
+            globalThis.messageInstance.write({ req_weather: 1 });
           } catch (e) {
-            console.log("Alloy: write error: " + e);
+            console.log("Alloy: req_weather write error: " + e);
           }
-        } else {
-          console.log("Alloy: Error - Message instance write is missing!");
         }
-      }, 5000);
+      }, 8000);
     });
   }
   
