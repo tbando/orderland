@@ -1,11 +1,10 @@
 import Layout from "layout";
 import Message from "pebble/message";
+import Timer from "timer";
 
-console.log("=== BUILD MARKER: V27_FIX_JS_WRITE_ERROR ===");
+console.log("=== BUILD MARKER: V28_DEEP_WRITE_FIX ===");
 
-// 1. Initialize Message instance FIRST to ensure it's ready for any early events
-// "10006"/"10007" are removed from keys list as they are not in the manifest messageKeys.
-// They will still be handled in onReadable for reception.
+// 1. Initialize Message instance
 globalThis.messageInstance = new Message({
   keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
@@ -67,15 +66,17 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange event");
-      // Use the global instance directly, ensure it's valid
-      if (globalThis.messageInstance && typeof globalThis.messageInstance.write === "function") {
-        try {
-          console.log("Alloy: Requesting weather update...");
-          globalThis.messageInstance.write({ req_weather: 1 });
-        } catch (e) {
-          console.log("Alloy: req_weather write error: " + e);
+      // Use Timer to decouple write() from the event context to avoid TypeError
+      Timer.set(() => {
+        if (globalThis.messageInstance) {
+          try {
+            console.log("Alloy: Requesting weather update...");
+            globalThis.messageInstance.write({ req_weather: 1 });
+          } catch (e) {
+            console.log("Alloy: req_weather write error: " + e);
+          }
         }
-      }
+      }, 1000);
     });
   }
   
