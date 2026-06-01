@@ -1,7 +1,49 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V26_RESTORE_COMMENTS ===");
+console.log("=== BUILD MARKER: V27_FIX_JS_WRITE_ERROR ===");
+
+// 1. Initialize Message instance FIRST to ensure it's ready for any early events
+// "10006"/"10007" are removed from keys list as they are not in the manifest messageKeys.
+// They will still be handled in onReadable for reception.
+globalThis.messageInstance = new Message({
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+  
+  onReadable() {
+    isPhoneReady = true; 
+    const msg = this.read();
+    console.log("Alloy: onReadable triggered");
+    
+    msg.forEach((value, key) => {
+      if (key === "weather") {
+        weatherCurrentCode = value;
+        localStorage.setItem("weatherCurrentCode", value.toString());
+      } else if (key === "temp_max") {
+        tempMax = value;
+        localStorage.setItem("tempMax", value.toString());
+      } else if (key === "temp_min") {
+        tempMin = value;
+        localStorage.setItem("tempMin", value.toString());
+      } else if (key === "weather_codes") {
+        const strArray = value.split(",");
+        weatherHourlyCodes = [];
+        for (let i = 0; i < strArray.length; i++) {
+          weatherHourlyCodes.push(parseInt(strArray[i], 10));
+        }
+        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
+        console.log("Alloy: Restored 24h weather array: " + JSON.stringify(weatherHourlyCodes));
+      } else if (key === "HEALTH_STEPS" || key === "10006") {
+        steps = Number(value);
+        localStorage.setItem("steps", steps.toString());
+        console.log("Alloy: UI update for steps: " + steps);
+      } else if (key === "HEART_RATE_BPM" || key === "10007") {
+        console.log("Alloy: Heart rate update: " + value);
+      }
+    });
+
+    app.distribute("onClockChanged", { date: new Date() });
+  }
+});
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -25,8 +67,8 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange event");
-      // Removed isPhoneReady guard to allow startup fetch
-      if (globalThis.messageInstance) {
+      // Use the global instance directly, ensure it's valid
+      if (globalThis.messageInstance && typeof globalThis.messageInstance.write === "function") {
         try {
           console.log("Alloy: Requesting weather update...");
           globalThis.messageInstance.write({ req_weather: 1 });
@@ -39,7 +81,6 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
-    
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const month = now.getMonth();
@@ -98,43 +139,6 @@ const app = new FaceApplication(null, {
   displayListLength: 2048, 
   touchCount: 0, 
   pixels: screen.width * 4,
-});
-
-globalThis.messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM", "10006", "10007"], 
-  
-  onReadable() {
-    isPhoneReady = true; 
-    const msg = this.read();
-    console.log("Alloy: onReadable (message arrived)");
-    
-    msg.forEach((value, key) => {
-      if (key === "weather") {
-        weatherCurrentCode = value;
-        localStorage.setItem("weatherCurrentCode", value.toString());
-      } else if (key === "temp_max") {
-        tempMax = value;
-        localStorage.setItem("tempMax", value.toString());
-      } else if (key === "temp_min") {
-        tempMin = value;
-        localStorage.setItem("tempMin", value.toString());
-      } else if (key === "weather_codes") {
-        const strArray = value.split(",");
-        weatherHourlyCodes = [];
-        for (let i = 0; i < strArray.length; i++) {
-          weatherHourlyCodes.push(parseInt(strArray[i], 10));
-        }
-        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-        console.log("Alloy: Restored 24h weather array: " + JSON.stringify(weatherHourlyCodes));
-      } else if (key === "HEALTH_STEPS" || key === "10006") {
-        steps = Number(value);
-        localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Updated steps variable to " + steps);
-      }
-    });
-
-    app.distribute("onClockChanged", { date: new Date() });
-  }
 });
 
 export default app;
