@@ -3,8 +3,13 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V35 10min Polling
+// modules/health_relay — V36 Configurable Intervals
 //
+
+// --- Configuration ---
+#define HEALTH_UPDATE_INTERVAL_MIN 10
+#define WEATHER_UPDATE_INTERVAL_MIN 60
+// ---------------------
 
 static AppTimer *s_retry_timer = NULL;
 static AppTimer *s_startup_timer = NULL;
@@ -32,11 +37,11 @@ static void send_update(bool request_weather) {
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Hourly weather trigger");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Weather request triggered (%d min interval)", WEATHER_UPDATE_INTERVAL_MIN);
   }
   
 	app_message_outbox_send();
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Sent Steps:%ld", (long)steps_to_send);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Sent Steps:%ld", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -50,24 +55,23 @@ static void schedule_retry(uint32_t ms) {
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
 }
 
-// C-side Tick handler: 10-min health polling, 60-min weather request
+// Tick handler: respects configured intervals
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
-    // 1. Every hour (tm_min == 0): Weather + Health
-    if (tick_time->tm_min == 0) {
-      send_update(true);
-    } 
-    // 2. Every 10 mins (except hour mark): Push Health Only
-    else if (tick_time->tm_min % 10 == 0) {
-      APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: 10-min health trigger");
-      send_update(false);
+    bool is_weather_time = (tick_time->tm_min % WEATHER_UPDATE_INTERVAL_MIN == 0);
+    bool is_health_time = (tick_time->tm_min % HEALTH_UPDATE_INTERVAL_MIN == 0);
+    
+    if (is_weather_time) {
+      send_update(true); // Weather update also pushes health
+    } else if (is_health_time) {
+      send_update(false); // Health only
     }
   }
 }
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V35: Startup initial push");
+  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Startup initial push");
 	send_update(true);
 }
 
@@ -78,7 +82,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V35_10MIN_POLLING ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V36_CONFIG_INTERVALS ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

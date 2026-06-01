@@ -1,7 +1,12 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V35_10MIN_POLLING ===");
+console.log("=== BUILD MARKER: V36_CONFIG_INTERVALS ===");
+
+// --- Configuration ---
+const HEALTH_UPDATE_INTERVAL_MIN = 10;
+const WEATHER_UPDATE_INTERVAL_MIN = 60;
+// ---------------------
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -60,9 +65,8 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      console.log("Alloy: hourchange event triggered");
-      // Weather request logic has been moved completely to the C-side timer
-      // because Alloy's Message.write() is fundamentally broken in this proxy.
+      console.log("Alloy: hourchange event");
+      // Note: Periodic weather/health triggers are handled robustly by the C-side timer.
     });
   }
   
