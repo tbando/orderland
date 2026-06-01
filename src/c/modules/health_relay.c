@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V40 Remove BPM
+// modules/health_relay — V42 Uppercase Keys Unified
 //
 
 // --- Configuration ---
@@ -34,7 +34,7 @@ static void send_update(bool request_weather) {
 	dict_write_int32(iter, MESSAGE_KEY_HEALTH_STEPS, steps_to_send);
   
   if (request_weather) {
-    dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
+    dict_write_int8(iter, MESSAGE_KEY_REQ_WEATHER, 1);
   }
   
 	app_message_outbox_send();
@@ -77,7 +77,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V41_CLEAN_MANIFEST ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V42_UPPERCASE_KEYS_UNIFIED ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

@@ -4,19 +4,19 @@ Pebble.addEventListener('ready', function(e) {
 
 Pebble.addEventListener('appmessage', function(e) {
   // Weather request from watch
-  if (e.payload.req_weather !== undefined) {
-    console.log('pkjs: Received weather request (req_weather)');
+  if (e.payload.REQ_WEATHER !== undefined) {
+    console.log('pkjs: Received weather request (REQ_WEATHER)');
     requestLocationAndWeather();
   }
 
   // Relay health data request from Alloy back to C
-  if (e.payload.req_health !== undefined) {
-    console.log('pkjs: Relaying req_health to C...');
+  if (e.payload.REQ_HEALTH !== undefined) {
+    console.log('pkjs: Relaying REQ_HEALTH to C...');
     Pebble.sendAppMessage(e.payload);
   }
 
   // Relay health data back to the watch (Alloy JS)
-  if (e.payload.HEALTH_STEPS !== undefined || e.payload.HEART_RATE_BPM !== undefined) {
+  if (e.payload.HEALTH_STEPS !== undefined) {
     console.log('pkjs: Relaying health data to Alloy: ' + JSON.stringify(e.payload));
     Pebble.sendAppMessage(e.payload);
   }
@@ -94,10 +94,10 @@ function fetchWeather(latitude, longitude) {
           var hourlyCodes = data.hourly.weather_code.slice(0, 24).map(mapWeatherCode);
           
           var payload = {
-            weather: mappedCurrent, 
-            temp_max: Math.round(data.daily.temperature_2m_max[0]),
-            temp_min: Math.round(data.daily.temperature_2m_min[0]),
-            weather_codes: hourlyCodes.join(",") 
+            WEATHER: mappedCurrent, 
+            TEMP_MAX: Math.round(data.daily.temperature_2m_max[0]),
+            TEMP_MIN: Math.round(data.daily.temperature_2m_min[0]),
+            WEATHER_CODES: hourlyCodes.join(",") 
           };
 
           console.log("pkjs: Sending weather payload to watch...");

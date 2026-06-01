@@ -1,32 +1,32 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V41_CLEAN_MANIFEST ===");
+console.log("=== BUILD MARKER: V42_UPPERCASE_KEYS_UNIFIED ===");
 
-// 1. Initialize Message instance
+// 1. Initialize Message instance with unified UPPERCASE keys
 const messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS"], 
+  keys: ["WEATHER", "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "REQ_HEALTH", "HEALTH_STEPS"], 
   
   onReadable() {
     const msg = this.read();
     
     msg.forEach((value, key) => {
-      if (key === "temp_max") {
+      if (key === "TEMP_MAX") {
         tempMax = value;
-        localStorage.setItem("tempMax", value.toString());
-      } else if (key === "temp_min") {
+        localStorage.setItem("TEMP_MAX", value.toString());
+      } else if (key === "TEMP_MIN") {
         tempMin = value;
-        localStorage.setItem("tempMin", value.toString());
-      } else if (key === "weather_codes") {
+        localStorage.setItem("TEMP_MIN", value.toString());
+      } else if (key === "WEATHER_CODES") {
         const strArray = value.split(",");
         weatherHourlyCodes = [];
         for (let i = 0; i < strArray.length; i++) {
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
-        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
+        localStorage.setItem("WEATHER_CODES", JSON.stringify(weatherHourlyCodes));
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
-        localStorage.setItem("steps", steps.toString());
+        localStorage.setItem("HEALTH_STEPS", steps.toString());
       }
     });
 
@@ -34,11 +34,11 @@ const messageInstance = new Message({
   }
 });
 
-// Global state
-let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
-let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
-let steps = parseInt(localStorage.getItem("steps") || "0");
-let weatherHourlyCodes = JSON.parse(localStorage.getItem("weatherHourlyCodes") || "[]");
+// Global state - Load from unified UPPERCASE cache keys
+let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
+let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
+let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
+let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
 class FaceApplicationBehavior {
