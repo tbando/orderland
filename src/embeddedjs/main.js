@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V18_ROBUST_FINAL ===");
+console.log("=== BUILD MARKER: V19_WEATHER_ROBUST_AUTO ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
@@ -22,7 +22,7 @@ class FaceApplicationBehavior {
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      // Weather relies on PKJS side automatic updates.
+      // Weather relies on C-side robust automatic updates (V19+).
     });
   }
   
@@ -52,7 +52,6 @@ class FaceApplicationBehavior {
     
     // 10-14: Steps (5 digits)
     let s = Number(steps);
-    // console.log("Drawing steps: " + s);
     if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
@@ -95,7 +94,7 @@ globalThis.messageInstance = new Message({
   onReadable() {
     isPhoneReady = true; 
     const msg = this.read();
-    console.log("Alloy: Data Received from PKJS");
+    console.log("Alloy: onReadable triggered");
     
     msg.forEach((value, key) => {
       if (key === "weather") {
@@ -117,11 +116,10 @@ globalThis.messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Steps Updated to " + steps);
+        console.log("Alloy: UI update for steps: " + steps);
       }
     });
 
-    // 画面全体を再描画
     app.distribute("onClockChanged", { date: new Date() });
   }
 });
