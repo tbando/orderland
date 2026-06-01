@@ -1,10 +1,9 @@
 import Layout from "layout";
 import Message from "pebble/message";
-import Timer from "timer";
 
-console.log("=== BUILD MARKER: V33_JS_NATIVE_FIX ===");
+console.log("=== BUILD MARKER: V34_C_TRIGGER_ONLY ===");
 
-// 1. Initialize Message instance AT THE ABSOLUTE TOP to ensure stable bridge establishment
+// 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
   keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
   
@@ -51,8 +50,6 @@ let steps = parseInt(localStorage.getItem("steps") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("weatherHourlyCodes") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
-let isPhoneReady = false;
-
 class FaceApplicationBehavior {
   onDisplaying(application) {
     console.log("Alloy: onDisplaying");
@@ -64,24 +61,8 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('hourchange', (clock) => {
       console.log("Alloy: hourchange event triggered");
-      // Use 15s delay to ensure total system initialization before calling native write
-      Timer.set(() => {
-        if (messageInstance) {
-          const typeOfWrite = typeof messageInstance.write;
-          console.log("Alloy: write() is a " + typeOfWrite);
-          
-          if (typeOfWrite === "function") {
-            try {
-              console.log("Alloy: Sending req_weather...");
-              messageInstance.write({ req_weather: 1 });
-            } catch (e) {
-              console.log("Alloy: req_weather write error: " + e);
-            }
-          } else {
-            console.log("Alloy: FATAL - messageInstance.write is not available!");
-          }
-        }
-      }, 15000);
+      // Weather request logic has been moved completely to the C-side timer
+      // because Alloy's Message.write() is fundamentally broken in this proxy.
     });
   }
   
