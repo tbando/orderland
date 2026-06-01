@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V25_STARTUP_WEATHER_FIX ===");
+console.log("=== BUILD MARKER: V26_RESTORE_COMMENTS ===");
 
 // Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");

@@ -38,10 +38,34 @@ function requestLocationAndWeather() {
 }
 
 function mapWeatherCode(wmoCode) {
+  // 整形・改行した天気マッピング辞書
   var weatherMap = {
-    0: 0, 1: 1, 2: 2, 3: 3, 45: 4, 48: 5, 51: 6, 53: 7, 55: 8, 56: 9, 57: 10,
-    61: 11, 63: 12, 65: 13, 66: 14, 67: 15, 71: 16, 73: 17, 75: 18, 77: 19,
-    80: 20, 81: 21, 82: 22, 85: 23, 86: 24, 95: 25
+    0: 0,   // Clear sky
+    1: 1,   // Mainly clear
+    2: 2,   // Partly cloudy
+    3: 3,   // Overcast
+    45: 4,  // Fog
+    48: 5,  // Depositing rime fog
+    51: 6,  // Drizzle: Light
+    53: 7,  // Drizzle: Moderate
+    55: 8,  // Drizzle: Dense intensity
+    56: 9,  // Freezing Drizzle: Light
+    57: 10, // Freezing Drizzle: Dense intensity
+    61: 11, // Rain: Slight
+    63: 12, // Rain: Moderate
+    65: 13, // Rain: Heavy intensity
+    66: 14, // Freezing Rain: Light
+    67: 15, // Freezing Rain: Heavy intensity
+    71: 16, // Snow fall: Slight
+    73: 17, // Snow fall: Moderate
+    75: 18, // Snow fall: Heavy intensity
+    77: 19, // Snow grains
+    80: 20, // Rain showers: Slight
+    81: 21, // Rain showers: Moderate
+    82: 22, // Rain showers: Violent
+    85: 23, // Snow showers: Slight
+    86: 24, // Snow showers: Heavy
+    95: 25  // Thunderstorm: Slight or moderate
   };
   return weatherMap[wmoCode] !== undefined ? weatherMap[wmoCode] : 0;
 }
