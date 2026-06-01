@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V36_CONFIG_INTERVALS ===");
+console.log("=== BUILD MARKER: V37_CLEANUP_UNUSED ===");
 
 // --- Configuration ---
 const HEALTH_UPDATE_INTERVAL_MIN = 10;
@@ -14,7 +14,6 @@ const messageInstance = new Message({
   
   onReadable() {
     const msg = this.read();
-    console.log("Alloy: onReadable (msg received)");
     
     msg.forEach((value, key) => {
       if (key === "weather") {
@@ -33,13 +32,9 @@ const messageInstance = new Message({
           weatherHourlyCodes.push(parseInt(strArray[i], 10));
         }
         localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-        console.log("Alloy: Weather array updated");
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Steps updated to: " + steps);
-      } else if (key === "HEART_RATE_BPM" || key === "10007") {
-        console.log("Alloy: Heart rate updated: " + value);
       }
     });
 
@@ -47,7 +42,7 @@ const messageInstance = new Message({
   }
 });
 
-// Load initial values from cache
+// Global state
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
 let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
@@ -57,16 +52,10 @@ if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0)
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    console.log("Alloy: onDisplaying");
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
       application.distribute("onClockChanged", clock);
-    });
-
-    watch.addEventListener('hourchange', (clock) => {
-      console.log("Alloy: hourchange event");
-      // Note: Periodic weather/health triggers are handled robustly by the C-side timer.
     });
   }
   

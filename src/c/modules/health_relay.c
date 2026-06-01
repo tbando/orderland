@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V36 Configurable Intervals
+// modules/health_relay — V37 Cleanup Unused
 //
 
 // --- Configuration ---
@@ -37,11 +37,11 @@ static void send_update(bool request_weather) {
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Weather request triggered (%d min interval)", WEATHER_UPDATE_INTERVAL_MIN);
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V37: Weather request triggered");
   }
   
 	app_message_outbox_send();
-	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Sent Steps:%ld", (long)steps_to_send);
+	APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V37: Sent Steps:%ld", (long)steps_to_send);
 }
 
 static void retry_timer_handler(void *context) {
@@ -71,7 +71,6 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V36: Startup initial push");
 	send_update(true);
 }
 
@@ -82,7 +81,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V36_CONFIG_INTERVALS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V37_CLEANUP_UNUSED ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
