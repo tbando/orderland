@@ -2,9 +2,48 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Timer from "timer";
 
-console.log("=== BUILD MARKER: V32_STATIC_MSG_FIX ===");
+console.log("=== BUILD MARKER: V33_JS_NATIVE_FIX ===");
 
-// Global state
+// 1. Initialize Message instance AT THE ABSOLUTE TOP to ensure stable bridge establishment
+const messageInstance = new Message({
+  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
+  
+  onReadable() {
+    const msg = this.read();
+    console.log("Alloy: onReadable (msg received)");
+    
+    msg.forEach((value, key) => {
+      if (key === "weather") {
+        weatherCurrentCode = value;
+        localStorage.setItem("weatherCurrentCode", value.toString());
+      } else if (key === "temp_max") {
+        tempMax = value;
+        localStorage.setItem("tempMax", value.toString());
+      } else if (key === "temp_min") {
+        tempMin = value;
+        localStorage.setItem("tempMin", value.toString());
+      } else if (key === "weather_codes") {
+        const strArray = value.split(",");
+        weatherHourlyCodes = [];
+        for (let i = 0; i < strArray.length; i++) {
+          weatherHourlyCodes.push(parseInt(strArray[i], 10));
+        }
+        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
+        console.log("Alloy: Weather array updated");
+      } else if (key === "HEALTH_STEPS" || key === "10006") {
+        steps = Number(value);
+        localStorage.setItem("steps", steps.toString());
+        console.log("Alloy: Steps updated to: " + steps);
+      } else if (key === "HEART_RATE_BPM" || key === "10007") {
+        console.log("Alloy: Heart rate updated: " + value);
+      }
+    });
+
+    app.distribute("onClockChanged", { date: new Date() });
+  }
+});
+
+// Load initial values from cache
 let weatherCurrentCode = parseInt(localStorage.getItem("weatherCurrentCode") || "0");
 let tempMax = parseInt(localStorage.getItem("tempMax") || "0");
 let tempMin = parseInt(localStorage.getItem("tempMin") || "0");
@@ -16,32 +55,33 @@ let isPhoneReady = false;
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    console.log("Alloy: onDisplaying (application started)");
+    console.log("Alloy: onDisplaying");
     application.distribute("onClockChanged", { date: new Date() });
-
-    // Internal ready flag after 5 seconds to ensure system stability
-    Timer.set(() => {
-      isPhoneReady = true;
-      console.log("Alloy: Bridge considered READY");
-    }, 5000);
 
     watch.addEventListener('minutechange', (clock) => {
       application.distribute("onClockChanged", clock);
     });
 
     watch.addEventListener('hourchange', (clock) => {
-      console.log("Alloy: hourchange event");
-      // Use 10s delay to allow full system initialization
+      console.log("Alloy: hourchange event triggered");
+      // Use 15s delay to ensure total system initialization before calling native write
       Timer.set(() => {
-        if (globalThis.messageInstance && globalThis.messageInstance.write) {
-          try {
-            console.log("Alloy: Requesting weather...");
-            globalThis.messageInstance.write({ req_weather: 1 });
-          } catch (e) {
-            console.log("Alloy: req_weather write failed: " + e);
+        if (messageInstance) {
+          const typeOfWrite = typeof messageInstance.write;
+          console.log("Alloy: write() is a " + typeOfWrite);
+          
+          if (typeOfWrite === "function") {
+            try {
+              console.log("Alloy: Sending req_weather...");
+              messageInstance.write({ req_weather: 1 });
+            } catch (e) {
+              console.log("Alloy: req_weather write error: " + e);
+            }
+          } else {
+            console.log("Alloy: FATAL - messageInstance.write is not available!");
           }
         }
-      }, 10000);
+      }, 15000);
     });
   }
   
@@ -105,45 +145,6 @@ const app = new FaceApplication(null, {
   displayListLength: 2048, 
   touchCount: 0, 
   pixels: screen.width * 4,
-});
-
-// Initialize Message instance at the very end (global scope)
-globalThis.messageInstance = new Message({
-  keys: ["weather", "temp_max", "temp_min", "weather_codes", "req_weather", "req_health", "HEALTH_STEPS", "HEART_RATE_BPM"], 
-  
-  onReadable() {
-    const msg = this.read();
-    console.log("Alloy: onReadable (msg received)");
-    
-    msg.forEach((value, key) => {
-      if (key === "weather") {
-        weatherCurrentCode = value;
-        localStorage.setItem("weatherCurrentCode", value.toString());
-      } else if (key === "temp_max") {
-        tempMax = value;
-        localStorage.setItem("tempMax", value.toString());
-      } else if (key === "temp_min") {
-        tempMin = value;
-        localStorage.setItem("tempMin", value.toString());
-      } else if (key === "weather_codes") {
-        const strArray = value.split(",");
-        weatherHourlyCodes = [];
-        for (let i = 0; i < strArray.length; i++) {
-          weatherHourlyCodes.push(parseInt(strArray[i], 10));
-        }
-        localStorage.setItem("weatherHourlyCodes", JSON.stringify(weatherHourlyCodes));
-        console.log("Alloy: Weather array updated");
-      } else if (key === "HEALTH_STEPS" || key === "10006") {
-        steps = Number(value);
-        localStorage.setItem("steps", steps.toString());
-        console.log("Alloy: Internal steps updated to: " + steps);
-      } else if (key === "HEART_RATE_BPM" || key === "10007") {
-        console.log("Alloy: Heart rate update: " + value);
-      }
-    });
-
-    app.distribute("onClockChanged", { date: new Date() });
-  }
 });
 
 export default app;
