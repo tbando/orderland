@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V19 Weather Robust Auto
+// modules/health_relay — V20 Weather Hourly C
 //
 
 static AppTimer *s_retry_timer = NULL;
@@ -32,9 +32,9 @@ static void send_update(bool request_weather) {
   
   if (request_weather) {
     dict_write_int8(iter, MESSAGE_KEY_req_weather, 1);
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V19: Requesting Weather + Health");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V20: Hourly Weather + Health Request");
   } else {
-    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V19: Requesting Health Only");
+    APP_LOG(APP_LOG_LEVEL_INFO, "RELAY V20: 5-min Health Only Push");
   }
   
 	app_message_outbox_send();
@@ -43,7 +43,7 @@ static void send_update(bool request_weather) {
 static void retry_timer_handler(void *context) {
 	(void)context;
 	s_retry_timer = NULL;
-	send_update(false); // Retry usually for health
+	send_update(false);
 }
 
 static void schedule_retry(uint32_t ms) {
@@ -54,11 +54,11 @@ static void schedule_retry(uint32_t ms) {
 // Tick handler for periodic updates
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
-    // 30 min / 60 min: Weather + Health
-    if (tick_time->tm_min % 30 == 0) {
+    // Exact hour mark (0 min): Weather + Health
+    if (tick_time->tm_min == 0) {
       send_update(true);
     } 
-    // 5 min: Health Only
+    // Every 5 min (excluding the hour mark): Health Only
     else if (tick_time->tm_min % 5 == 0) {
       send_update(false);
     }
@@ -67,8 +67,7 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-  // On startup, get everything
-	send_update(true);
+	send_update(true); // Initial fetch
 }
 
 static void health_event_handler(HealthEventType event, void *context) {
@@ -78,7 +77,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V19_WEATHER_ROBUST_AUTO ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V20_WEATHER_HOURLY_C ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
