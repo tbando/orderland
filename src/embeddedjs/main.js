@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V43_CLEAN_COMMENTS ===");
+console.log("=== BUILD MARKER: V44_RESTORE_MAPPING_COMMENTS ===");
 
 const messageInstance = new Message({
   keys: ["WEATHER", "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "REQ_HEALTH", "HEALTH_STEPS"], 
@@ -57,18 +57,22 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
+    // 1-4: Hours/Minutes
     if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
     if (content) { content.variant = hours % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
     if (content) { content.variant = minutes % 10; content = content.next; }
     
+    // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
     if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
     if (content) { content.variant = date % 10; content = content.next; }
     if (content) { content.variant = day; content = content.next; }
     
+    // 9: Step Label
     if (content) { content.variant = 0; content = content.next; } 
     
+    // 10-14: Steps (5 digits)
     let s = Number(steps);
     if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
@@ -76,12 +80,14 @@ class FaceApplicationBehavior {
     if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
     if (content) { content.variant = s % 10; content = content.next; }
 
+    // 15-19: Weather/Temp
     if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
     if (content) { content.variant = tempMax % 10; content = content.next; }
     if (content) { content.variant = 10; content = content.next; }
     if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
     if (content) { content.variant = tempMin % 10; content = content.next; }
 
+    // 20-43: Hourly Weather
     for (let i = 0; i < 24; i++) {
       if (content) {
         content.variant = weatherHourlyCodes[i];

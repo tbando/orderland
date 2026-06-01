@@ -73,7 +73,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V43_CLEAN_COMMENTS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V44_RESTORE_MAPPING_COMMENTS ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
