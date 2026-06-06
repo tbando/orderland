@@ -73,7 +73,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V45_RANDOM_DIGIT_SETS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V46_CLEANUP_ASSETS ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif

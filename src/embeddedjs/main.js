@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V45_RANDOM_DIGIT_SETS ===");
+console.log("=== BUILD MARKER: V46_CLEANUP_ASSETS ===");
 
 let digitSets = [0, 10, 20, 30];
 
