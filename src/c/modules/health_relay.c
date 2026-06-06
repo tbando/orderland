@@ -73,7 +73,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V46_CLEANUP_ASSETS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V47_FIX_LAYOUT_SYNTAX ===");
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
