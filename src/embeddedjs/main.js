@@ -1,7 +1,40 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V44_RESTORE_MAPPING_COMMENTS ===");
+console.log("=== BUILD MARKER: V45_RANDOM_DIGIT_SETS ===");
+
+let digitSets = [0, 10, 20, 30];
+
+function updateDigitSets() {
+  const today = new Date().toDateString();
+  const savedDate = localStorage.getItem("DIGIT_SETS_DATE");
+  const savedSets = localStorage.getItem("DIGIT_SETS_ARR");
+
+  if (savedDate === today && savedSets) {
+    try {
+      digitSets = JSON.parse(savedSets);
+    } catch(e) {
+      randomizeSets(today);
+    }
+  } else {
+    randomizeSets(today);
+  }
+}
+
+function randomizeSets(today) {
+  let arr = [0, 10, 20, 30];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    let temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  digitSets = arr;
+  localStorage.setItem("DIGIT_SETS_DATE", today);
+  localStorage.setItem("DIGIT_SETS_ARR", JSON.stringify(digitSets));
+}
+
+updateDigitSets();
 
 const messageInstance = new Message({
   keys: ["WEATHER", "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "REQ_HEALTH", "HEALTH_STEPS"], 
@@ -50,6 +83,8 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
+    updateDigitSets(); // Ensure sets are up to date for the day
+
     const hours = now.getHours();
     const minutes = now.getMinutes();
     const month = now.getMonth();
@@ -57,11 +92,11 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
-    // 1-4: Hours/Minutes
-    if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
-    if (content) { content.variant = hours % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
-    if (content) { content.variant = minutes % 10; content = content.next; }
+    // 1-4: Hours/Minutes (Randomized digit sets)
+    if (content) { content.variant = digitSets[0] + Math.idiv(hours, 10); content = content.next; }
+    if (content) { content.variant = digitSets[1] + (hours % 10); content = content.next; }
+    if (content) { content.variant = digitSets[2] + Math.idiv(minutes, 10); content = content.next; }
+    if (content) { content.variant = digitSets[3] + (minutes % 10); content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
