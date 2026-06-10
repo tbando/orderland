@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/health_relay — V43 Clean Comments
+// modules/health_relay — V49 Clean Startup
 //
 
 #define HEALTH_UPDATE_INTERVAL_MIN 10
@@ -11,9 +11,11 @@
 
 static AppTimer *s_retry_timer = NULL;
 static AppTimer *s_startup_timer = NULL;
+static bool s_is_initialized = false;
 
 static void schedule_retry(uint32_t ms);
 
+// Send current health snapshot and optional weather request
 static void send_update(bool request_weather) {
   time_t now = time(NULL);
   
@@ -48,6 +50,7 @@ static void schedule_retry(uint32_t ms) {
 	s_retry_timer = app_timer_register(ms, retry_timer_handler, NULL);
 }
 
+// Tick handler: respects configured intervals
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   if (units_changed & MINUTE_UNIT) {
     bool is_weather_time = (tick_time->tm_min % WEATHER_UPDATE_INTERVAL_MIN == 0);
@@ -63,17 +66,20 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 
 static void startup_timer_handler(void *context) {
 	s_startup_timer = NULL;
-	send_update(true);
+  s_is_initialized = true; // Mark as initialized to enable regular event processing
+	send_update(true); // First combined push
 }
 
 static void health_event_handler(HealthEventType event, void *context) {
-  if (event == HealthEventSignificantUpdate) {
+  // Only respond to events after the startup timer has fired to avoid double push.
+  if (s_is_initialized && event == HealthEventSignificantUpdate) {
     send_update(false);
   }
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V48_CORRECT_VARIANTS_60 ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V49_CLEAN_STARTUP ===");
+  s_is_initialized = false;
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
 #endif
@@ -82,6 +88,7 @@ void health_relay_init(void) {
 }
 
 void health_relay_deinit(void) {
+  s_is_initialized = false;
   tick_timer_service_unsubscribe();
 #ifdef PBL_HEALTH
   health_service_events_unsubscribe();

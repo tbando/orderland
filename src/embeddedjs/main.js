@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V48_CORRECT_VARIANTS_60 ===");
+console.log("=== BUILD MARKER: V49_CLEAN_STARTUP ===");
 
 let digitSets = [0, 10, 20, 30];
 
