@@ -3,7 +3,8 @@ import Message from "pebble/message";
 
 console.log("=== BUILD MARKER: V49_CLEAN_STARTUP ===");
 
-let digitSets = [0, 10, 20, 30];
+// let digitSets = [0, 10, 20, 30];
+let digitSets = [0, 0, 0, 0];
 
 function updateDigitSets() {
   const today = new Date().toDateString();
@@ -22,7 +23,8 @@ function updateDigitSets() {
 }
 
 function randomizeSets(today) {
-  let arr = [0, 10, 20, 30];
+  // let arr = [0, 10, 20, 30];
+  let arr = [0, 0, 0, 0];
   for (let i = arr.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     let temp = arr[i];
