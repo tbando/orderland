@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V74_SHUFFLE_40_DIGITS ===");
+console.log("=== BUILD MARKER: V75_UPDATE_MANIFEST ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
