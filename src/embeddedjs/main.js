@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V65_CLEANUP_MESSAGE_KEYS ===");
+console.log("=== BUILD MARKER: V66_SPLIT_DIGIT_ASSETS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({

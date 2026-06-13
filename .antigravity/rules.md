@@ -39,4 +39,4 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
-- `digitsSkin` (representing hour/minute digits) uses [large_digits.png](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/assets/large_digits.png). The number of variants configuration must align with the layout design (currently set to `variants: 40`).
+- Hour and minute digits use individual split asset files: `large_digits_0.png` through `large_digits_3.png` via separate skins (`digitsSkin0` through `digitsSkin3`). The variants configuration must align with the layout design (currently set to `variants: 60`).
