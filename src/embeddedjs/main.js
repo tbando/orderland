@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V63_HEALTH_CACHE_10MIN ===");
+console.log("=== BUILD MARKER: V64_CLEANUP_UNUSED_CODE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({

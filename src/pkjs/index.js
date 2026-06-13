@@ -9,11 +9,6 @@ Pebble.addEventListener('appmessage', function(e) {
     requestLocationAndWeather();
   }
 
-  // Relay health data request from Alloy back to C
-  if (e.payload.REQ_HEALTH !== undefined) {
-    console.log('pkjs: Relaying REQ_HEALTH to C...');
-    Pebble.sendAppMessage(e.payload);
-  }
 
   // Relay health data back to the watch (Alloy JS)
   if (e.payload.HEALTH_STEPS !== undefined) {

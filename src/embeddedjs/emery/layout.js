@@ -1,5 +1,4 @@
 const backgroundSkin = new Skin({ fill:"#000000" });
-const barSkin = new Skin({ fill:"#AAFFAA" });
 
 // 使用する画像は1枚だけ。variantsを40（10文字×4セット）に設定
 const digitsSkin = new Skin({ texture: new Texture(`large_digits.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
@@ -12,8 +11,6 @@ const daysSkin = new Skin({ texture: new Texture(`days.png`), width:50, height:3
 const labelsSkin = new Skin({ texture: new Texture(`labels.png`), width:80, height:30, variants:80, color:"#FFFFFF" });
 const weatherSkin = new Skin({ texture: new Texture(`weather_dots.png`), width:6, height:6*3+2*2, variants:6});
 
-const whiteSkin = new Skin({ fill: "white" });
-const redSkin = new Skin({ fill: "red" });
 
 const dots = [];
 
