@@ -32,7 +32,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 ### 3. Local Storage Behavior
 - **Watch JS-side (`src/embeddedjs/main.js`)**:
   - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`, `HEALTH_STEPS`: Caches weather and steps to render them instantly on reload.
-  - `DIGIT_SETS_DATE`, `DIGIT_SETS_ARR`: Caches the randomized hour/minute digit font layouts so they only randomize once per day, persisting across watch restarts.
+  - `DIGIT_SETS_DATE`, `DIGIT_SETS_ARR`: Caches the deterministic hour/minute digit font layouts so they cycle once per day based on the calendar date, persisting across watch restarts.
 - **Phone JS-side (`src/pkjs/index.js`)**:
   - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD`: Caches weather API payloads for 60 minutes.
   - `LAST_HEALTH_TIME`: Caches the last timestamp when health steps were relayed to the watch (10-minute TTL).

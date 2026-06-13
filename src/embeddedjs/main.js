@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V67_REDUCE_DIGIT_ASSETS ===");
+console.log("=== BUILD MARKER: V68_DETERMINISTIC_DIGIT_SETS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -44,7 +44,8 @@ if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0)
 let digitSets = [0, 10, 20, 30];
 
 function updateDigitSets() {
-  const today = new Date().toDateString();
+  const now = new Date();
+  const today = now.toDateString();
   const savedDate = localStorage.getItem("DIGIT_SETS_DATE");
   const savedSets = localStorage.getItem("DIGIT_SETS_ARR");
 
@@ -52,23 +53,23 @@ function updateDigitSets() {
     try {
       digitSets = JSON.parse(savedSets);
     } catch(e) {
-      randomizeSets(today);
+      applyDeterministicSets(now.getDate(), today);
     }
   } else {
-    randomizeSets(today);
+    applyDeterministicSets(now.getDate(), today);
   }
 }
 
-function randomizeSets(today) {
-  let arr = [0, 10, 20, 30];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    let temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-  }
-  digitSets = arr;
-  localStorage.setItem("DIGIT_SETS_DATE", today);
+function applyDeterministicSets(dateNum, todayStr) {
+  const permutations = [
+    [0, 10, 20, 30], [0, 10, 30, 20], [0, 20, 10, 30], [0, 20, 30, 10], [0, 30, 10, 20], [0, 30, 20, 10],
+    [10, 0, 20, 30], [10, 0, 30, 20], [10, 20, 0, 30], [10, 20, 30, 0], [10, 30, 0, 20], [10, 30, 20, 0],
+    [20, 0, 10, 30], [20, 0, 30, 10], [20, 10, 0, 30], [20, 10, 30, 0], [20, 30, 0, 10], [20, 30, 10, 0],
+    [30, 0, 10, 20], [30, 0, 20, 10], [30, 10, 0, 20], [30, 10, 20, 0], [30, 20, 0, 10], [30, 20, 10, 0]
+  ];
+  const index = dateNum % permutations.length;
+  digitSets = permutations[index];
+  localStorage.setItem("DIGIT_SETS_DATE", todayStr);
   localStorage.setItem("DIGIT_SETS_ARR", JSON.stringify(digitSets));
 }
 
