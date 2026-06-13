@@ -31,7 +31,7 @@ function requestLocationAndWeather() {
   var now = Date.now();
 
   if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
-    console.log('pkjs: Using cached weather data (within 60 mins)');
+    console.log('pkjs: Skipping HTTPS request. Using cached weather data (within 60 mins)');
     try {
       var payload = JSON.parse(lastPayload);
       Pebble.sendAppMessage(payload,

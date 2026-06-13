@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V61_WEATHER_CACHE_60MIN ===");
+console.log("=== BUILD MARKER: V62_EXPLICIT_CACHE_LOG ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
