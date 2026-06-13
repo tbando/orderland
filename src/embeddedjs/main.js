@@ -1,11 +1,13 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V72_RESTORE_APP_MSG ===");
+console.log("=== BUILD MARKER: V73_LIMIT_APP_MSG ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
   keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS"], 
+  input: 512,
+  output: 512, 
   
   onReadable() {
     const msg = this.read();
