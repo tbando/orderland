@@ -27,6 +27,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 - **Health Data Relaying**:
   - C-side polls steps from `HealthService` every 10 minutes and on significant updates, sending them via `HEALTH_STEPS`.
   - Phone JS-side relays `HEALTH_STEPS` back to the watch's JS-side.
+  - **Caching Constraint**: Health data relaying is throttled on the phone's `localStorage` for **10 minutes** to prevent excessive communication overhead, especially during watchface restarts.
 
 ### 3. Local Storage Behavior
 - **Watch JS-side (`src/embeddedjs/main.js`)**:
@@ -34,6 +35,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
   - `DIGIT_SETS_DATE`, `DIGIT_SETS_ARR`: Caches the randomized hour/minute digit font layouts so they only randomize once per day, persisting across watch restarts.
 - **Phone JS-side (`src/pkjs/index.js`)**:
   - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD`: Caches weather API payloads for 60 minutes.
+  - `LAST_HEALTH_TIME`: Caches the last timestamp when health steps were relayed to the watch (10-minute TTL).
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).

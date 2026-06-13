@@ -17,8 +17,21 @@ Pebble.addEventListener('appmessage', function(e) {
 
   // Relay health data back to the watch (Alloy JS)
   if (e.payload.HEALTH_STEPS !== undefined) {
-    console.log('pkjs: Relaying health data to Alloy: ' + JSON.stringify(e.payload));
-    Pebble.sendAppMessage(e.payload);
+    var now = Date.now();
+    var lastHealthTime = localStorage.getItem('LAST_HEALTH_TIME');
+    var steps = e.payload.HEALTH_STEPS;
+
+    if (lastHealthTime && (now - parseInt(lastHealthTime, 10) < 10 * 60 * 1000)) {
+      console.log('pkjs: Skipping health relay. Cached within 10 mins. Steps: ' + steps);
+    } else {
+      console.log('pkjs: Relaying health data to Alloy: ' + JSON.stringify(e.payload));
+      try {
+        localStorage.setItem('LAST_HEALTH_TIME', now.toString());
+      } catch (e) {
+        console.log('pkjs: Failed to save health time to localStorage: ' + e);
+      }
+      Pebble.sendAppMessage(e.payload);
+    }
   }
 });
 
