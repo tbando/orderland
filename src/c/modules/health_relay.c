@@ -78,7 +78,11 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V49_CLEAN_STARTUP ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V50_APP_MSG_LIMIT_TEST ===");
+  
+  // Try to open AppMessage with custom smaller buffers (512B) to save heap
+  app_message_open(512, 512);
+
   s_is_initialized = false;
 #ifdef PBL_HEALTH
   health_service_events_subscribe(health_event_handler, NULL);
