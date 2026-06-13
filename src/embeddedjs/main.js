@@ -1,11 +1,11 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V64_CLEANUP_UNUSED_CODE ===");
+console.log("=== BUILD MARKER: V65_CLEANUP_MESSAGE_KEYS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["WEATHER", "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "REQ_HEALTH", "HEALTH_STEPS"], 
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS"], 
   
   onReadable() {
     const msg = this.read();

@@ -15,12 +15,10 @@
         "displayName": "Orderland",
         "enableMultiJS": true,
         "messageKeys": [
-            "WEATHER",
             "TEMP_MAX",
             "TEMP_MIN",
             "WEATHER_CODES",
             "REQ_WEATHER",
-            "REQ_HEALTH",
             "HEALTH_STEPS"
         ],
         "projectType": "moddable",

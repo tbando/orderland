@@ -118,11 +118,9 @@ function fetchWeather(latitude, longitude) {
       if (req.status >= 200 && req.status < 400) {
         try {
           var data = JSON.parse(req.responseText);
-          var mappedCurrent = mapWeatherCode(data.current.weather_code);
           var hourlyCodes = data.hourly.weather_code.slice(0, 24).map(mapWeatherCode);
           
           var payload = {
-            WEATHER: mappedCurrent, 
             TEMP_MAX: Math.round(data.daily.temperature_2m_max[0]),
             TEMP_MIN: Math.round(data.daily.temperature_2m_min[0]),
             WEATHER_CODES: hourlyCodes.join(",") 
