@@ -25,13 +25,13 @@ Pebble.addEventListener('appmessage', function(e) {
 function requestLocationAndWeather() {
   console.log('pkjs: requestLocationAndWeather() started');
 
-  // Check localStorage cache (30 minutes)
+  // Check localStorage cache (60 minutes)
   var lastTime = localStorage.getItem('LAST_WEATHER_TIME');
   var lastPayload = localStorage.getItem('LAST_WEATHER_PAYLOAD');
   var now = Date.now();
 
-  if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 30 * 60 * 1000)) {
-    console.log('pkjs: Using cached weather data (within 30 mins)');
+  if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
+    console.log('pkjs: Using cached weather data (within 60 mins)');
     try {
       var payload = JSON.parse(lastPayload);
       Pebble.sendAppMessage(payload,

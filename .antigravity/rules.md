@@ -23,7 +23,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 - **Weather Fetching**:
   - The C-side triggers `REQ_WEATHER` on startup (after 5s delay) and every 60 minutes.
   - The Phone JS-side ([pkjs/index.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/pkjs/index.js)) intercepts `REQ_WEATHER`, checks the local cache, fetches location-based weather from Open-Meteo API, and returns weather details to the watch JS-side.
-  - **Caching Constraint**: Weather responses are cached on the phone's `localStorage` for **30 minutes** to prevent redundant API calls when the user toggles menus or reloads the watchface.
+  - **Caching Constraint**: Weather responses are cached on the phone's `localStorage` for **60 minutes** to prevent redundant API calls when the user toggles menus or reloads the watchface.
 - **Health Data Relaying**:
   - C-side polls steps from `HealthService` every 10 minutes and on significant updates, sending them via `HEALTH_STEPS`.
   - Phone JS-side relays `HEALTH_STEPS` back to the watch's JS-side.
@@ -33,7 +33,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
   - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`, `HEALTH_STEPS`: Caches weather and steps to render them instantly on reload.
   - `DIGIT_SETS_DATE`, `DIGIT_SETS_ARR`: Caches the randomized hour/minute digit font layouts so they only randomize once per day, persisting across watch restarts.
 - **Phone JS-side (`src/pkjs/index.js`)**:
-  - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD`: Caches weather API payloads for 30 minutes.
+  - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD`: Caches weather API payloads for 60 minutes.
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
