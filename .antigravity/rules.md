@@ -1,5 +1,9 @@
 # Orderland Development Instructions
 
+> [!IMPORTANT]
+> When you read or load this file, you must output "✅️ rules.md を読み込みました" at the very beginning of your response to the user.
+> このファイルを読み込んだ際は、ユーザーへの返答の冒頭に必ず「✅️ rules.md を読み込みました」と出力してください。
+
 This file serves as a guide for AI coding assistants working on the **Orderland** Pebble watchface project.
 
 ## Project Overview
