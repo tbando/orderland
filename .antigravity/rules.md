@@ -28,7 +28,6 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
   - C-side polls steps from `HealthService` every 10 minutes and on significant updates, sending them via `HEALTH_STEPS`.
   - Phone JS-side relays `HEALTH_STEPS` back to the watch's JS-side.
   - **Caching Constraint**: Health data relaying is throttled on the phone's `localStorage` for **10 minutes** to prevent excessive communication overhead, especially during watchface restarts.
-  - **AppMessage Buffer Optimization**: A test configuration is implemented in `health_relay.c` to pre-open the AppMessage connection with small 512-byte buffers (`app_message_open(512, 512)`) in an attempt to bypass Moddable's default maximum buffer size allocation and reclaim ~15KB heap memory.
 
 ### 3. Local Storage Behavior
 - **Watch JS-side (`src/embeddedjs/main.js`)**:

@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V71_APP_MSG_LIMIT_TEST ===");
+console.log("=== BUILD MARKER: V72_RESTORE_APP_MSG ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
