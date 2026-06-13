@@ -1,6 +1,6 @@
 const backgroundSkin = new Skin({ fill:"#000000" });
 
-const digitsSkin = new Skin({ texture: new Texture(`large_digits_40.png`), width:60, height:90, variants:40, color:"#FFFFFF" });
+const digitsSkin = new Skin({ texture: new Texture(`large_digits_40.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
 
 const smallDigitsTexture = new Texture(`small_digits.png`);
 const smallDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#FFFFFF" });
