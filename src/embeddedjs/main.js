@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V68_DETERMINISTIC_DIGIT_SETS ===");
+console.log("=== BUILD MARKER: V69_REMOVE_DIGIT_SHUFFLE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -40,41 +40,6 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
-// digitSets array holds the offset (0, 10, 20, 30) for each of the 4 positions
-let digitSets = [0, 10, 20, 30];
-
-function updateDigitSets() {
-  const now = new Date();
-  const today = now.toDateString();
-  const savedDate = localStorage.getItem("DIGIT_SETS_DATE");
-  const savedSets = localStorage.getItem("DIGIT_SETS_ARR");
-
-  if (savedDate === today && savedSets) {
-    try {
-      digitSets = JSON.parse(savedSets);
-    } catch(e) {
-      applyDeterministicSets(now.getDate(), today);
-    }
-  } else {
-    applyDeterministicSets(now.getDate(), today);
-  }
-}
-
-function applyDeterministicSets(dateNum, todayStr) {
-  const permutations = [
-    [0, 10, 20, 30], [0, 10, 30, 20], [0, 20, 10, 30], [0, 20, 30, 10], [0, 30, 10, 20], [0, 30, 20, 10],
-    [10, 0, 20, 30], [10, 0, 30, 20], [10, 20, 0, 30], [10, 20, 30, 0], [10, 30, 0, 20], [10, 30, 20, 0],
-    [20, 0, 10, 30], [20, 0, 30, 10], [20, 10, 0, 30], [20, 10, 30, 0], [20, 30, 0, 10], [20, 30, 10, 0],
-    [30, 0, 10, 20], [30, 0, 20, 10], [30, 10, 0, 20], [30, 10, 20, 0], [30, 20, 0, 10], [30, 20, 10, 0]
-  ];
-  const index = dateNum % permutations.length;
-  digitSets = permutations[index];
-  localStorage.setItem("DIGIT_SETS_DATE", todayStr);
-  localStorage.setItem("DIGIT_SETS_ARR", JSON.stringify(digitSets));
-}
-
-updateDigitSets();
-
 class FaceApplicationBehavior {
   onDisplaying(application) {
     application.distribute("onClockChanged", { date: new Date() });
@@ -86,7 +51,6 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
-    updateDigitSets(); // Ensure sets are up to date for the day
 
     const hours = now.getHours();
     const minutes = now.getMinutes();
@@ -95,11 +59,11 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
-    // 1-4: Hours/Minutes (Math Randomization using offset + digit)
-    if (content) { content.variant = digitSets[0] + Math.idiv(hours, 10); content = content.next; }
-    if (content) { content.variant = digitSets[1] + (hours % 10); content = content.next; }
-    if (content) { content.variant = digitSets[2] + Math.idiv(minutes, 10); content = content.next; }
-    if (content) { content.variant = digitSets[3] + (minutes % 10); content = content.next; }
+    // 1-4: Hours/Minutes (HH and MM using separate static images, no offset)
+    if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
+    if (content) { content.variant = hours % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
+    if (content) { content.variant = minutes % 10; content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
