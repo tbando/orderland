@@ -2,8 +2,6 @@ const backgroundSkin = new Skin({ fill:"#000000" });
 
 const digitsSkin0 = new Skin({ texture: new Texture(`large_digits_0.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
 const digitsSkin1 = new Skin({ texture: new Texture(`large_digits_1.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
-const digitsSkin2 = new Skin({ texture: new Texture(`large_digits_2.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
-const digitsSkin3 = new Skin({ texture: new Texture(`large_digits_3.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
 
 const smallDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FFFFFF" });
 const smallRedDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FF5500" });
@@ -34,10 +32,10 @@ const Layout = Container.template($ => ({
 	contents: [
     // hours
     Content($, { left:0, top:10, skin:digitsSkin0 }),
-    Content($, { left:60, top:10, skin:digitsSkin1 }),
+    Content($, { left:60, top:10, skin:digitsSkin0 }),
     // minutes
-    Content($, { left:80, top:100, skin:digitsSkin2 }),
-    Content($, { left:140, top:100, skin:digitsSkin3 }),
+    Content($, { left:80, top:100, skin:digitsSkin1 }),
+    Content($, { left:140, top:100, skin:digitsSkin1 }),
     // month
     Content($, { left:150-2, top:0, skin:monthsSkin }),
     // date
