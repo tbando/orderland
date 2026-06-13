@@ -1,6 +1,9 @@
 const backgroundSkin = new Skin({ fill:"#000000" });
 const barSkin = new Skin({ fill:"#AAFFAA" });
-const digitsSkin = new Skin({ texture: new Texture(`large_digits.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
+
+// 使用する画像は1枚だけ。variantsを40（10文字×4セット）に設定
+const digitsSkin = new Skin({ texture: new Texture(`large_digits.png`), width:60, height:90, variants:40, color:"#FFFFFF" });
+
 const smallDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FFFFFF" });
 const smallRedDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#FF5500" });
 const smallBlueDigitsSkin = new Skin({ texture: new Texture(`small_digits.png`), width:12, height:30, variants:12, color:"#55AAFF" });
@@ -11,7 +14,6 @@ const weatherSkin = new Skin({ texture: new Texture(`weather_dots.png`), width:6
 
 const whiteSkin = new Skin({ fill: "white" });
 const redSkin = new Skin({ fill: "red" });
-
 
 const dots = [];
 

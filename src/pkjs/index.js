@@ -24,6 +24,26 @@ Pebble.addEventListener('appmessage', function(e) {
 
 function requestLocationAndWeather() {
   console.log('pkjs: requestLocationAndWeather() started');
+
+  // Check localStorage cache (30 minutes)
+  var lastTime = localStorage.getItem('LAST_WEATHER_TIME');
+  var lastPayload = localStorage.getItem('LAST_WEATHER_PAYLOAD');
+  var now = Date.now();
+
+  if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 30 * 60 * 1000)) {
+    console.log('pkjs: Using cached weather data (within 30 mins)');
+    try {
+      var payload = JSON.parse(lastPayload);
+      Pebble.sendAppMessage(payload,
+        function() { console.log('pkjs: Cached weather send success!'); },
+        function(err) { console.log('pkjs: Cached weather send failed: ' + JSON.stringify(err)); }
+      );
+      return;
+    } catch (e) {
+      console.log('pkjs: Error parsing cached weather, fetching fresh data');
+    }
+  }
+
   navigator.geolocation.getCurrentPosition(
     function(pos) {
       console.log('pkjs: Location obtained, fetching weather...');
@@ -101,6 +121,14 @@ function fetchWeather(latitude, longitude) {
           };
 
           console.log("pkjs: Sending weather payload to watch...");
+
+          // Save to cache
+          try {
+            localStorage.setItem('LAST_WEATHER_TIME', Date.now().toString());
+            localStorage.setItem('LAST_WEATHER_PAYLOAD', JSON.stringify(payload));
+          } catch (e) {
+            console.log('pkjs: Failed to save weather to localStorage: ' + e);
+          }
 
           Pebble.sendAppMessage(payload, 
             function() { console.log('pkjs: Weather send success!'); },

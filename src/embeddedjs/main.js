@@ -1,43 +1,9 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V49_CLEAN_STARTUP ===");
+console.log("=== BUILD MARKER: V59_WEATHER_CACHE ===");
 
-// let digitSets = [0, 10, 20, 30];
-let digitSets = [0, 0, 0, 0];
-
-function updateDigitSets() {
-  const today = new Date().toDateString();
-  const savedDate = localStorage.getItem("DIGIT_SETS_DATE");
-  const savedSets = localStorage.getItem("DIGIT_SETS_ARR");
-
-  if (savedDate === today && savedSets) {
-    try {
-      digitSets = JSON.parse(savedSets);
-    } catch(e) {
-      randomizeSets(today);
-    }
-  } else {
-    randomizeSets(today);
-  }
-}
-
-function randomizeSets(today) {
-  // let arr = [0, 10, 20, 30];
-  let arr = [0, 0, 0, 0];
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    let temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-  }
-  digitSets = arr;
-  localStorage.setItem("DIGIT_SETS_DATE", today);
-  localStorage.setItem("DIGIT_SETS_ARR", JSON.stringify(digitSets));
-}
-
-updateDigitSets();
-
+// 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
   keys: ["WEATHER", "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "REQ_HEALTH", "HEALTH_STEPS"], 
   
@@ -74,6 +40,40 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
+// digitSets array holds the offset (0, 10, 20, 30) for each of the 4 positions
+let digitSets = [0, 10, 20, 30];
+
+function updateDigitSets() {
+  const today = new Date().toDateString();
+  const savedDate = localStorage.getItem("DIGIT_SETS_DATE");
+  const savedSets = localStorage.getItem("DIGIT_SETS_ARR");
+
+  if (savedDate === today && savedSets) {
+    try {
+      digitSets = JSON.parse(savedSets);
+    } catch(e) {
+      randomizeSets(today);
+    }
+  } else {
+    randomizeSets(today);
+  }
+}
+
+function randomizeSets(today) {
+  let arr = [0, 10, 20, 30];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    let temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  digitSets = arr;
+  localStorage.setItem("DIGIT_SETS_DATE", today);
+  localStorage.setItem("DIGIT_SETS_ARR", JSON.stringify(digitSets));
+}
+
+updateDigitSets();
+
 class FaceApplicationBehavior {
   onDisplaying(application) {
     application.distribute("onClockChanged", { date: new Date() });
@@ -94,7 +94,7 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
-    // 1-4: Hours/Minutes (Randomized digit sets)
+    // 1-4: Hours/Minutes (Math Randomization using offset + digit)
     if (content) { content.variant = digitSets[0] + Math.idiv(hours, 10); content = content.next; }
     if (content) { content.variant = digitSets[1] + (hours % 10); content = content.next; }
     if (content) { content.variant = digitSets[2] + Math.idiv(minutes, 10); content = content.next; }
