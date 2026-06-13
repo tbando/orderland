@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V73_LIMIT_APP_MSG ===");
+console.log("=== BUILD MARKER: V74_SHUFFLE_40_DIGITS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -42,6 +42,9 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
+let currentMday = -1;
+let currentDesignOffset = 0;
+
 class FaceApplicationBehavior {
   onDisplaying(application) {
     application.distribute("onClockChanged", { date: new Date() });
@@ -53,6 +56,12 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
+    const mday = now.getDate();
+
+    if (mday !== currentMday) {
+      currentMday = mday;
+      currentDesignOffset = Math.floor(Math.random() * 4) * 10;
+    }
 
     const hours = now.getHours();
     const minutes = now.getMinutes();
@@ -61,11 +70,11 @@ class FaceApplicationBehavior {
     const day = now.getDay();
     let content = application.first.first;
     
-    // 1-4: Hours/Minutes (HH and MM using separate static images, no offset)
-    if (content) { content.variant = Math.idiv(hours, 10); content = content.next; }
-    if (content) { content.variant = hours % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(minutes, 10); content = content.next; }
-    if (content) { content.variant = minutes % 10; content = content.next; }
+    // 1-4: Hours/Minutes (HH and MM using single 40-digit image, dynamic offset)
+    if (content) { content.variant = currentDesignOffset + Math.idiv(hours, 10); content = content.next; }
+    if (content) { content.variant = currentDesignOffset + (hours % 10); content = content.next; }
+    if (content) { content.variant = currentDesignOffset + Math.idiv(minutes, 10); content = content.next; }
+    if (content) { content.variant = currentDesignOffset + (minutes % 10); content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
