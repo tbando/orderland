@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V69_REMOVE_DIGIT_SHUFFLE ===");
+console.log("=== BUILD MARKER: V70_SHARE_SMALL_DIGITS_TEXTURE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
