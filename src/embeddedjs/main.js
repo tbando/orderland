@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V76_FIX_VARIANTS ===");
+console.log("=== BUILD MARKER: V77_SHUFFLE_EACH_DIGIT ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -42,8 +42,30 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
-let currentMday = -1;
-let currentDesignOffset = 0;
+let currentMday = parseInt(localStorage.getItem("DESIGN_MDAY") || "-1", 10);
+let designOffsets = [];
+try {
+  designOffsets = JSON.parse(localStorage.getItem("DESIGN_OFFSETS") || "[]");
+} catch (e) {
+  designOffsets = [];
+}
+if (!Array.isArray(designOffsets) || designOffsets.length !== 4) {
+  designOffsets = [0, 10, 20, 30];
+}
+
+function updateDesignOffsets(mday) {
+  const base = [0, 10, 20, 30];
+  for (let i = base.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = base[i];
+    base[i] = base[j];
+    base[j] = temp;
+  }
+  designOffsets = base;
+  currentMday = mday;
+  localStorage.setItem("DESIGN_MDAY", mday.toString());
+  localStorage.setItem("DESIGN_OFFSETS", JSON.stringify(designOffsets));
+}
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
@@ -59,8 +81,7 @@ class FaceApplicationBehavior {
     const mday = now.getDate();
 
     if (mday !== currentMday) {
-      currentMday = mday;
-      currentDesignOffset = Math.floor(Math.random() * 4) * 10;
+      updateDesignOffsets(mday);
     }
 
     const hours = now.getHours();
@@ -71,10 +92,10 @@ class FaceApplicationBehavior {
     let content = application.first.first;
     
     // 1-4: Hours/Minutes (HH and MM using single 40-digit image, dynamic offset)
-    if (content) { content.variant = currentDesignOffset + Math.idiv(hours, 10); content = content.next; }
-    if (content) { content.variant = currentDesignOffset + (hours % 10); content = content.next; }
-    if (content) { content.variant = currentDesignOffset + Math.idiv(minutes, 10); content = content.next; }
-    if (content) { content.variant = currentDesignOffset + (minutes % 10); content = content.next; }
+    if (content) { content.variant = designOffsets[0] + Math.idiv(hours, 10); content = content.next; }
+    if (content) { content.variant = designOffsets[1] + (hours % 10); content = content.next; }
+    if (content) { content.variant = designOffsets[2] + Math.idiv(minutes, 10); content = content.next; }
+    if (content) { content.variant = designOffsets[3] + (minutes % 10); content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
