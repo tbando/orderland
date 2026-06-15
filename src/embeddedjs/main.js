@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V78_WEIGHTED_SHUFFLE_ON_CHANGE ===");
+console.log("=== BUILD MARKER: V79_SIMPLIFIED_CHANGE_LOGIC ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -42,16 +42,7 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
-let lastDigits = [];
-try {
-  lastDigits = JSON.parse(localStorage.getItem("LAST_TIME_DIGITS") || "[]");
-} catch (e) {
-  lastDigits = [];
-}
-if (!Array.isArray(lastDigits) || lastDigits.length !== 4) {
-  lastDigits = [-1, -1, -1, -1];
-}
-
+let isStartup = true;
 let designOffsets = [];
 try {
   designOffsets = JSON.parse(localStorage.getItem("DESIGN_OFFSETS") || "[]");
@@ -65,10 +56,6 @@ function getRandomOffset() {
   if (r < 0.7) return 10;  // 30%
   if (r < 0.9) return 20;  // 20%
   return 30;               // 10%
-}
-
-if (!Array.isArray(designOffsets) || designOffsets.length !== 4) {
-  designOffsets = [getRandomOffset(), getRandomOffset(), getRandomOffset(), getRandomOffset()];
 }
 
 class FaceApplicationBehavior {
@@ -89,19 +76,38 @@ class FaceApplicationBehavior {
     const newH2 = hours % 10;
     const newM1 = Math.idiv(minutes, 10);
     const newM2 = minutes % 10;
-    const newDigits = [newH1, newH2, newM1, newM2];
 
     let changed = false;
-    for (let i = 0; i < 4; i++) {
-      if (newDigits[i] !== lastDigits[i]) {
-        designOffsets[i] = getRandomOffset();
-        lastDigits[i] = newDigits[i];
+
+    if (isStartup) {
+      if (!Array.isArray(designOffsets) || designOffsets.length !== 4) {
+        designOffsets = [getRandomOffset(), getRandomOffset(), getRandomOffset(), getRandomOffset()];
         changed = true;
       }
+      isStartup = false;
+    } else {
+      // 分の2桁目は毎分必ず変わる
+      designOffsets[3] = getRandomOffset();
+
+      // 分の1桁目は分2桁目が0になるときに変わる
+      if (newM2 === 0) {
+        designOffsets[2] = getRandomOffset();
+      }
+
+      // 時の2桁目は分が0になるときに変わる
+      if (minutes === 0) {
+        designOffsets[1] = getRandomOffset();
+      }
+
+      // 時の1桁目は分が0かつ時2桁目が0になるときに変わる (09->10, 19->20, 23->00)
+      if (minutes === 0 && newH2 === 0) {
+        designOffsets[0] = getRandomOffset();
+      }
+
+      changed = true;
     }
 
     if (changed) {
-      localStorage.setItem("LAST_TIME_DIGITS", JSON.stringify(lastDigits));
       localStorage.setItem("DESIGN_OFFSETS", JSON.stringify(designOffsets));
     }
 
@@ -111,10 +117,10 @@ class FaceApplicationBehavior {
     let content = application.first.first;
     
     // 1-4: Hours/Minutes (HH and MM using single 40-digit image, dynamic offset)
-    if (content) { content.variant = designOffsets[0] + newDigits[0]; content = content.next; }
-    if (content) { content.variant = designOffsets[1] + newDigits[1]; content = content.next; }
-    if (content) { content.variant = designOffsets[2] + newDigits[2]; content = content.next; }
-    if (content) { content.variant = designOffsets[3] + newDigits[3]; content = content.next; }
+    if (content) { content.variant = designOffsets[0] + newH1; content = content.next; }
+    if (content) { content.variant = designOffsets[1] + newH2; content = content.next; }
+    if (content) { content.variant = designOffsets[2] + newM1; content = content.next; }
+    if (content) { content.variant = designOffsets[3] + newM2; content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
