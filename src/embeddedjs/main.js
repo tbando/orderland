@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V79_SIMPLIFIED_CHANGE_LOGIC ===");
+console.log("=== BUILD MARKER: V80_FIX_TIME_CHANGE_FLICKER ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -43,6 +43,7 @@ let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
 let isStartup = true;
+let lastMinutes = -1;
 let designOffsets = [];
 try {
   designOffsets = JSON.parse(localStorage.getItem("DESIGN_OFFSETS") || "[]");
@@ -84,8 +85,9 @@ class FaceApplicationBehavior {
         designOffsets = [getRandomOffset(), getRandomOffset(), getRandomOffset(), getRandomOffset()];
         changed = true;
       }
+      lastMinutes = minutes;
       isStartup = false;
-    } else {
+    } else if (minutes !== lastMinutes) {
       // 分の2桁目は毎分必ず変わる
       designOffsets[3] = getRandomOffset();
 
@@ -104,6 +106,7 @@ class FaceApplicationBehavior {
         designOffsets[0] = getRandomOffset();
       }
 
+      lastMinutes = minutes;
       changed = true;
     }
 

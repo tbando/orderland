@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V58_SIMPLIFIED_CHANGE_LOGIC ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V59_FIX_TIME_CHANGE_FLICKER ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH
