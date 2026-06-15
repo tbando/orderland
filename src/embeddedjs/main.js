@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V77_SHUFFLE_EACH_DIGIT ===");
+console.log("=== BUILD MARKER: V78_WEIGHTED_SHUFFLE_ON_CHANGE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -42,29 +42,33 @@ let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
 if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
 
-let currentMday = parseInt(localStorage.getItem("DESIGN_MDAY") || "-1", 10);
+let lastDigits = [];
+try {
+  lastDigits = JSON.parse(localStorage.getItem("LAST_TIME_DIGITS") || "[]");
+} catch (e) {
+  lastDigits = [];
+}
+if (!Array.isArray(lastDigits) || lastDigits.length !== 4) {
+  lastDigits = [-1, -1, -1, -1];
+}
+
 let designOffsets = [];
 try {
   designOffsets = JSON.parse(localStorage.getItem("DESIGN_OFFSETS") || "[]");
 } catch (e) {
   designOffsets = [];
 }
-if (!Array.isArray(designOffsets) || designOffsets.length !== 4) {
-  designOffsets = [0, 10, 20, 30];
+
+function getRandomOffset() {
+  const r = Math.random();
+  if (r < 0.4) return 0;   // 40%
+  if (r < 0.7) return 10;  // 30%
+  if (r < 0.9) return 20;  // 20%
+  return 30;               // 10%
 }
 
-function updateDesignOffsets(mday) {
-  const base = [0, 10, 20, 30];
-  for (let i = base.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const temp = base[i];
-    base[i] = base[j];
-    base[j] = temp;
-  }
-  designOffsets = base;
-  currentMday = mday;
-  localStorage.setItem("DESIGN_MDAY", mday.toString());
-  localStorage.setItem("DESIGN_OFFSETS", JSON.stringify(designOffsets));
+if (!Array.isArray(designOffsets) || designOffsets.length !== 4) {
+  designOffsets = [getRandomOffset(), getRandomOffset(), getRandomOffset(), getRandomOffset()];
 }
 
 class FaceApplicationBehavior {
@@ -78,24 +82,39 @@ class FaceApplicationBehavior {
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
-    const mday = now.getDate();
-
-    if (mday !== currentMday) {
-      updateDesignOffsets(mday);
-    }
-
     const hours = now.getHours();
     const minutes = now.getMinutes();
+
+    const newH1 = Math.idiv(hours, 10);
+    const newH2 = hours % 10;
+    const newM1 = Math.idiv(minutes, 10);
+    const newM2 = minutes % 10;
+    const newDigits = [newH1, newH2, newM1, newM2];
+
+    let changed = false;
+    for (let i = 0; i < 4; i++) {
+      if (newDigits[i] !== lastDigits[i]) {
+        designOffsets[i] = getRandomOffset();
+        lastDigits[i] = newDigits[i];
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      localStorage.setItem("LAST_TIME_DIGITS", JSON.stringify(lastDigits));
+      localStorage.setItem("DESIGN_OFFSETS", JSON.stringify(designOffsets));
+    }
+
     const month = now.getMonth();
     const date = now.getDate();
     const day = now.getDay();
     let content = application.first.first;
     
     // 1-4: Hours/Minutes (HH and MM using single 40-digit image, dynamic offset)
-    if (content) { content.variant = designOffsets[0] + Math.idiv(hours, 10); content = content.next; }
-    if (content) { content.variant = designOffsets[1] + (hours % 10); content = content.next; }
-    if (content) { content.variant = designOffsets[2] + Math.idiv(minutes, 10); content = content.next; }
-    if (content) { content.variant = designOffsets[3] + (minutes % 10); content = content.next; }
+    if (content) { content.variant = designOffsets[0] + newDigits[0]; content = content.next; }
+    if (content) { content.variant = designOffsets[1] + newDigits[1]; content = content.next; }
+    if (content) { content.variant = designOffsets[2] + newDigits[2]; content = content.next; }
+    if (content) { content.variant = designOffsets[3] + newDigits[3]; content = content.next; }
     
     // 5-8: Month/Date/Day
     if (content) { content.variant = month; content = content.next; }
