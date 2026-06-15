@@ -46,18 +46,18 @@ const Layout = Container.template($ => ({
     // step label
     Content($, { left:0+2, top:110, skin:labelsSkin }),
     // step
-    Content($, { left:12*0+2, top:135, skin:smallDigitsSkin }),
-    Content($, { left:12*1+2, top:135, skin:smallDigitsSkin }),
-    Content($, { left:12*2+2, top:135, skin:smallDigitsSkin }),
-    Content($, { left:12*3+2, top:135, skin:smallDigitsSkin }),
-    Content($, { left:12*4+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:14*0+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:14*1+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:14*2+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:14*3+2, top:135, skin:smallDigitsSkin }),
+    Content($, { left:14*4+2, top:135, skin:smallDigitsSkin }),
 
     // temp max
-    Content($, { left:0+2, bottom:5+24, skin:smallRedDigitsSkin }),
-    Content($, { left:12+2, bottom:5+24, skin:smallRedDigitsSkin }),
-    Content($, { left:24+2, bottom:5+24, skin:smallDigitsSkin }),
-    Content($, { left:36+2, bottom:5+24, skin:smallBlueDigitsSkin }),
-    Content($, { left:48+2, bottom:5+24, skin:smallBlueDigitsSkin }),
+    Content($, { left:14*0+2, bottom:5+24, skin:smallRedDigitsSkin }),
+    Content($, { left:14*1+2, bottom:5+24, skin:smallRedDigitsSkin }),
+    Content($, { left:14*2+2, bottom:5+24, skin:smallDigitsSkin }),
+    Content($, { left:14*3+2, bottom:5+24, skin:smallBlueDigitsSkin }),
+    Content($, { left:14*4+2, bottom:5+24, skin:smallBlueDigitsSkin }),
     // weather dots
     ...dots
 	]
