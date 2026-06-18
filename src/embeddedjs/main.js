@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V82_OPTIMIZE_HEAP_USAGE ===");
+console.log("=== BUILD MARKER: V83_MINIMIZE_CODE_SIZE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -54,19 +54,14 @@ try {
 const SET_COUNT = 4; // 将来6セットにする場合はここを 6 に変更
 const WEIGHTS = [0.4, 0.3, 0.2, 0.1, 0.0, 0.0]; // 各セットの確率の重み
 
-function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
-  if ((mask & 1) && d0 === offset) return true;
-  if ((mask & 2) && d1 === offset) return true;
-  if ((mask & 4) && d2 === offset) return true;
-  if ((mask & 8) && d3 === offset) return true;
-  return false;
-}
-
 function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   let totalWeight = 0;
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+    if (!(((mask & 1) && d0 === offset) || 
+          ((mask & 2) && d1 === offset) || 
+          ((mask & 4) && d2 === offset) || 
+          ((mask & 8) && d3 === offset))) {
       totalWeight += WEIGHTS[i] || 0;
     }
   }
@@ -74,7 +69,10 @@ function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   if (totalWeight <= 0) {
     for (let i = 0; i < SET_COUNT; i++) {
       const offset = i * 10;
-      if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) return offset;
+      if (!(((mask & 1) && d0 === offset) || 
+            ((mask & 2) && d1 === offset) || 
+            ((mask & 4) && d2 === offset) || 
+            ((mask & 8) && d3 === offset))) return offset;
     }
     return 0;
   }
@@ -83,17 +81,21 @@ function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   let sum = 0;
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+    if (!(((mask & 1) && d0 === offset) || 
+          ((mask & 2) && d1 === offset) || 
+          ((mask & 4) && d2 === offset) || 
+          ((mask & 8) && d3 === offset))) {
       sum += WEIGHTS[i] || 0;
-      if (r <= sum) {
-        return offset;
-      }
+      if (r <= sum) return offset;
     }
   }
   
   for (let i = SET_COUNT - 1; i >= 0; i--) {
     const offset = i * 10;
-    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) return offset;
+    if (!(((mask & 1) && d0 === offset) || 
+          ((mask & 2) && d1 === offset) || 
+          ((mask & 4) && d2 === offset) || 
+          ((mask & 8) && d3 === offset))) return offset;
   }
   return 0;
 }
@@ -122,20 +124,12 @@ class FaceApplicationBehavior {
     if (isStartup) {
       let isValid = Array.isArray(designOffsets) && designOffsets.length === 4;
       if (isValid) {
-        for (let i = 0; i < 4; i++) {
-          const val = designOffsets[i];
-          if (val % 10 !== 0 || val < 0 || val >= SET_COUNT * 10) {
-            isValid = false;
-            break;
-          }
-          for (let j = 0; j < i; j++) {
-            if (designOffsets[j] === val) {
-              isValid = false;
-              break;
-            }
-          }
-          if (!isValid) break;
-        }
+        const d0 = designOffsets[0], d1 = designOffsets[1], d2 = designOffsets[2], d3 = designOffsets[3];
+        isValid = (d0 !== d1 && d0 !== d2 && d0 !== d3 && d1 !== d2 && d1 !== d3 && d2 !== d3) &&
+                  (d0 >= 0 && d0 < SET_COUNT * 10 && d0 % 10 === 0) &&
+                  (d1 >= 0 && d1 < SET_COUNT * 10 && d1 % 10 === 0) &&
+                  (d2 >= 0 && d2 < SET_COUNT * 10 && d2 % 10 === 0) &&
+                  (d3 >= 0 && d3 < SET_COUNT * 10 && d3 % 10 === 0);
       }
       
       if (!isValid) {
@@ -153,50 +147,31 @@ class FaceApplicationBehavior {
       lastMinutes = minutes;
       isStartup = false;
     } else if (minutes !== lastMinutes) {
-      const updateFlags = [false, false, false, false];
-      
-      // 分の2桁目は毎分必ず変わる
-      updateFlags[3] = true;
-
-      // 分の1桁目は分2桁目が0になるときに変わる
-      if (newM2 === 0) {
-        updateFlags[2] = true;
-      }
-
-      // 時の2桁目は分が0になるときに変わる
-      if (minutes === 0) {
-        updateFlags[1] = true;
-      }
-
-      // 時の1桁目は分が0かつ時2桁目が0になるときに変わる (09->10, 19->20, 23->00)
-      if (minutes === 0 && newH2 === 0) {
-        updateFlags[0] = true;
-      }
+      let updateMask = 8; // 分の2桁目は毎分必ず変わる
+      if (newM2 === 0) updateMask |= 4;
+      if (minutes === 0) updateMask |= 2;
+      if (minutes === 0 && newH2 === 0) updateMask |= 1;
 
       let d0 = designOffsets[0];
       let d1 = designOffsets[1];
       let d2 = designOffsets[2];
       let d3 = designOffsets[3];
 
-      let mask = 0;
-      if (!updateFlags[0]) mask |= 1;
-      if (!updateFlags[1]) mask |= 2;
-      if (!updateFlags[2]) mask |= 4;
-      if (!updateFlags[3]) mask |= 8;
+      let mask = ~updateMask & 15;
 
-      if (updateFlags[0]) {
+      if (updateMask & 1) {
         d0 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
         mask |= 1;
       }
-      if (updateFlags[1]) {
+      if (updateMask & 2) {
         d1 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
         mask |= 2;
       }
-      if (updateFlags[2]) {
+      if (updateMask & 4) {
         d2 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
         mask |= 4;
       }
-      if (updateFlags[3]) {
+      if (updateMask & 8) {
         d3 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
         mask |= 8;
       }
