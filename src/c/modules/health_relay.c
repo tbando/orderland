@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V60_WEIGHTED_UNIQUE_SHUFFLE ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V61_OPTIMIZE_HEAP_USAGE ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

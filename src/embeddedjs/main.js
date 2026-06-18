@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V81_WEIGHTED_UNIQUE_SHUFFLE ===");
+console.log("=== BUILD MARKER: V82_OPTIMIZE_HEAP_USAGE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -54,34 +54,48 @@ try {
 const SET_COUNT = 4; // 将来6セットにする場合はここを 6 に変更
 const WEIGHTS = [0.4, 0.3, 0.2, 0.1, 0.0, 0.0]; // 各セットの確率の重み
 
-function getRandomOffsetExcept(usedList) {
-  const candidates = [];
+function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
+  if ((mask & 1) && d0 === offset) return true;
+  if ((mask & 2) && d1 === offset) return true;
+  if ((mask & 4) && d2 === offset) return true;
+  if ((mask & 8) && d3 === offset) return true;
+  return false;
+}
+
+function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   let totalWeight = 0;
-  
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (usedList.indexOf(offset) === -1) {
-      const weight = WEIGHTS[i] || 0;
-      candidates.push({ offset, weight });
-      totalWeight += weight;
+    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+      totalWeight += WEIGHTS[i] || 0;
     }
   }
   
-  if (candidates.length === 0) return 0;
   if (totalWeight <= 0) {
-    const idx = Math.floor(Math.random() * candidates.length);
-    return candidates[idx].offset;
+    for (let i = 0; i < SET_COUNT; i++) {
+      const offset = i * 10;
+      if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) return offset;
+    }
+    return 0;
   }
   
   const r = Math.random() * totalWeight;
   let sum = 0;
-  for (let i = 0; i < candidates.length; i++) {
-    sum += candidates[i].weight;
-    if (r <= sum) {
-      return candidates[i].offset;
+  for (let i = 0; i < SET_COUNT; i++) {
+    const offset = i * 10;
+    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+      sum += WEIGHTS[i] || 0;
+      if (r <= sum) {
+        return offset;
+      }
     }
   }
-  return candidates[candidates.length - 1].offset;
+  
+  for (let i = SET_COUNT - 1; i >= 0; i--) {
+    const offset = i * 10;
+    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) return offset;
+  }
+  return 0;
 }
 
 class FaceApplicationBehavior {
@@ -108,24 +122,31 @@ class FaceApplicationBehavior {
     if (isStartup) {
       let isValid = Array.isArray(designOffsets) && designOffsets.length === 4;
       if (isValid) {
-        const seen = [];
         for (let i = 0; i < 4; i++) {
           const val = designOffsets[i];
-          if (val % 10 !== 0 || val < 0 || val >= SET_COUNT * 10 || seen.indexOf(val) !== -1) {
+          if (val % 10 !== 0 || val < 0 || val >= SET_COUNT * 10) {
             isValid = false;
             break;
           }
-          seen.push(val);
+          for (let j = 0; j < i; j++) {
+            if (designOffsets[j] === val) {
+              isValid = false;
+              break;
+            }
+          }
+          if (!isValid) break;
         }
       }
       
       if (!isValid) {
-        const tempUsed = [];
-        for (let i = 0; i < 4; i++) {
-          const offset = getRandomOffsetExcept(tempUsed);
-          designOffsets[i] = offset;
-          tempUsed.push(offset);
-        }
+        const d0 = getRandomOffsetExcept2(0, 0, 0, 0, 0);
+        const d1 = getRandomOffsetExcept2(d0, 0, 0, 0, 1);
+        const d2 = getRandomOffsetExcept2(d0, d1, 0, 0, 3);
+        const d3 = getRandomOffsetExcept2(d0, d1, d2, 0, 7);
+        designOffsets[0] = d0;
+        designOffsets[1] = d1;
+        designOffsets[2] = d2;
+        designOffsets[3] = d3;
         changed = true;
       }
       
@@ -152,22 +173,38 @@ class FaceApplicationBehavior {
         updateFlags[0] = true;
       }
 
-      // 1. 更新されないオフセットを used に集める
-      const tempUsed = [];
-      for (let i = 0; i < 4; i++) {
-        if (!updateFlags[i]) {
-          tempUsed.push(designOffsets[i]);
-        }
+      let d0 = designOffsets[0];
+      let d1 = designOffsets[1];
+      let d2 = designOffsets[2];
+      let d3 = designOffsets[3];
+
+      let mask = 0;
+      if (!updateFlags[0]) mask |= 1;
+      if (!updateFlags[1]) mask |= 2;
+      if (!updateFlags[2]) mask |= 4;
+      if (!updateFlags[3]) mask |= 8;
+
+      if (updateFlags[0]) {
+        d0 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
+        mask |= 1;
+      }
+      if (updateFlags[1]) {
+        d1 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
+        mask |= 2;
+      }
+      if (updateFlags[2]) {
+        d2 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
+        mask |= 4;
+      }
+      if (updateFlags[3]) {
+        d3 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
+        mask |= 8;
       }
 
-      // 2. 更新される桁に対して、キープされたオフセットを避けつつ抽選
-      for (let i = 0; i < 4; i++) {
-        if (updateFlags[i]) {
-          const offset = getRandomOffsetExcept(tempUsed);
-          designOffsets[i] = offset;
-          tempUsed.push(offset);
-        }
-      }
+      designOffsets[0] = d0;
+      designOffsets[1] = d1;
+      designOffsets[2] = d2;
+      designOffsets[3] = d3;
 
       lastMinutes = minutes;
       changed = true;
