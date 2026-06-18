@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V83_MINIMIZE_CODE_SIZE ===");
+console.log("=== BUILD MARKER: V84_REDUCE_BYTECODE_SIZE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -54,50 +54,42 @@ try {
 const SET_COUNT = 4; // 将来6セットにする場合はここを 6 に変更
 const WEIGHTS = [0.4, 0.3, 0.2, 0.1, 0.0, 0.0]; // 各セットの確率の重み
 
+function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
+  if ((mask & 1) && d0 === offset) return true;
+  if ((mask & 2) && d1 === offset) return true;
+  if ((mask & 4) && d2 === offset) return true;
+  if ((mask & 8) && d3 === offset) return true;
+  return false;
+}
+
 function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   let totalWeight = 0;
+  let firstUnused = -1;
+  let lastUnused = -1;
+  
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!(((mask & 1) && d0 === offset) || 
-          ((mask & 2) && d1 === offset) || 
-          ((mask & 4) && d2 === offset) || 
-          ((mask & 8) && d3 === offset))) {
+    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
       totalWeight += WEIGHTS[i] || 0;
+      if (firstUnused === -1) firstUnused = offset;
+      lastUnused = offset;
     }
   }
   
-  if (totalWeight <= 0) {
-    for (let i = 0; i < SET_COUNT; i++) {
-      const offset = i * 10;
-      if (!(((mask & 1) && d0 === offset) || 
-            ((mask & 2) && d1 === offset) || 
-            ((mask & 4) && d2 === offset) || 
-            ((mask & 8) && d3 === offset))) return offset;
-    }
-    return 0;
-  }
+  if (lastUnused === -1) return 0;
+  if (totalWeight <= 0) return firstUnused;
   
   const r = Math.random() * totalWeight;
   let sum = 0;
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!(((mask & 1) && d0 === offset) || 
-          ((mask & 2) && d1 === offset) || 
-          ((mask & 4) && d2 === offset) || 
-          ((mask & 8) && d3 === offset))) {
+    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
       sum += WEIGHTS[i] || 0;
       if (r <= sum) return offset;
     }
   }
   
-  for (let i = SET_COUNT - 1; i >= 0; i--) {
-    const offset = i * 10;
-    if (!(((mask & 1) && d0 === offset) || 
-          ((mask & 2) && d1 === offset) || 
-          ((mask & 4) && d2 === offset) || 
-          ((mask & 8) && d3 === offset))) return offset;
-  }
-  return 0;
+  return lastUnused;
 }
 
 class FaceApplicationBehavior {
