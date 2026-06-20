@@ -17,7 +17,7 @@ Pebble.addEventListener('appmessage', function(e) {
     var steps = e.payload.HEALTH_STEPS;
 
     if (lastHealthTime && (now - parseInt(lastHealthTime, 10) < 10 * 60 * 1000)) {
-      console.log('pkjs: Skipping health relay. Cached within 10 mins. Steps: ' + steps);
+      console.log('pkjs: Skipping health relay. Using cached health data (within 10 mins). Steps: ' + steps);
     } else {
       console.log('pkjs: Relaying health data to Alloy: ' + JSON.stringify(e.payload));
       try {
@@ -31,7 +31,7 @@ Pebble.addEventListener('appmessage', function(e) {
 });
 
 function requestLocationAndWeather() {
-  console.log('pkjs: requestLocationAndWeather() started');
+  console.log('pkjs: RequestLocationAndWeather() started');
 
   // Check localStorage cache (60 minutes)
   var lastTime = localStorage.getItem('LAST_WEATHER_TIME');
@@ -39,7 +39,7 @@ function requestLocationAndWeather() {
   var now = Date.now();
 
   if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
-    console.log('pkjs: Skipping HTTPS request. Using cached weather data (within 60 mins)');
+    console.log('pkjs: Skipping weather fetch. Using cached weather data (within 60 mins)');
     try {
       var payload = JSON.parse(lastPayload);
       Pebble.sendAppMessage(payload,
@@ -48,17 +48,17 @@ function requestLocationAndWeather() {
       );
       return;
     } catch (e) {
-      console.log('pkjs: Error parsing cached weather, fetching fresh data');
+      console.log('pkjs: Error parsing cached weather. Fetching fresh data...');
     }
   }
 
   navigator.geolocation.getCurrentPosition(
     function(pos) {
-      console.log('pkjs: Location obtained, fetching weather...');
+      console.log('pkjs: Location obtained. Fetching weather...');
       fetchWeather(pos.coords.latitude, pos.coords.longitude);
     },
     function(err) {
-      console.log('pkjs: Location error, using default coordinates');
+      console.log('pkjs: Location error. Using default coordinates...');
       fetchWeather(35.7126, 139.7800);
     },
     { timeout: 15000, maximumAge: 60000 }
@@ -109,7 +109,7 @@ function fetchWeather(latitude, longitude) {
               "&timezone=Asia%2FTokyo" +
               "&forecast_days=1";
 
-    console.log("pkjs: Fetching URL -> " + url);
+    console.log('pkjs: Fetching URL -> ' + url);
 
     var req = new XMLHttpRequest();
     req.open('GET', url, true);
@@ -126,7 +126,7 @@ function fetchWeather(latitude, longitude) {
             WEATHER_CODES: hourlyCodes.join(",") 
           };
 
-          console.log("pkjs: Sending weather payload to watch...");
+          console.log('pkjs: Sending weather payload to watch...');
 
           // Save to cache
           try {
@@ -141,12 +141,12 @@ function fetchWeather(latitude, longitude) {
             function(err) { console.log('pkjs: Weather send failed: ' + JSON.stringify(err)); }
           );
         } catch (e) {
-          console.log("pkjs: JSON parse error: " + e);
+          console.log('pkjs: JSON parse error: ' + e);
         }
       }
     };
     req.send();
   } catch (e) {
-    console.log("pkjs: fetchWeather exception: " + e);
+    console.log('pkjs: FetchWeather exception: ' + e);
   }
 }

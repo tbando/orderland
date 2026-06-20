@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V84_REDUCE_BYTECODE_SIZE ===");
+console.log("=== BUILD MARKER: V85_CLEANUP_LOGS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
