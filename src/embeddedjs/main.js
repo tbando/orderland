@@ -36,6 +36,7 @@ const messageInstance = new Message({
   }
 });
 
+
 let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
 let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
 let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
