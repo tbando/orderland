@@ -15,14 +15,16 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 ## Key Rules & Architectural Decisions
 
 ### 1. Build Markers
-- Do **not** remove or modify the `BUILD MARKER` logs. They are used to verify successful deployment of C and JS binaries.
-  - C-side: `APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: ... ===");` in [health_relay.c](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/c/modules/health_relay.c)
-  - JS-side: `console.log("=== BUILD MARKER: ... ===");` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js)
+- **CRITICAL RULE**: Every time you modify the code, you **MUST** update (increment or rename) the `BUILD MARKER` logs. This ensures the user can verify that the new C and JS binaries have been successfully deployed.
+- Do **not** remove these logs.
+  - C-side: `APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: VXX_... ===");` in [health_relay.c](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/c/modules/health_relay.c)
+  - JS-side: `console.log("=== BUILD MARKER: VXX_... ===");` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js)
 
 ### 2. Weather & Health Relaying
 - **Weather Fetching**:
   - The C-side triggers `REQ_WEATHER` on startup (after 5s delay) and every 60 minutes.
   - The Phone JS-side ([pkjs/index.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/pkjs/index.js)) intercepts `REQ_WEATHER`, checks the local cache, fetches location-based weather from Open-Meteo API, and returns weather details to the watch JS-side.
+  - **Data Encoding**: To save JS and C-heap memory on the watch, hourly weather codes (0-25) are NOT sent as JSON arrays or comma-separated strings. They are encoded as a single 24-character string using `String.fromCharCode(65 + code)`. The watch decodes this string at render time using `charCodeAt`.
   - **Caching Constraint**: Weather responses are cached on the phone's `localStorage` for **60 minutes** to prevent redundant API calls when the user toggles menus or reloads the watchface.
 - **Health Data Relaying**:
   - C-side polls steps from `HealthService` every 10 minutes and on significant updates, sending them via `HEALTH_STEPS`.
