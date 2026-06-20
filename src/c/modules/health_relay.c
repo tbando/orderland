@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V67_FIX_LOCALSTORAGE_CACHE ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V68_BUMP_CACHE_KEY ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

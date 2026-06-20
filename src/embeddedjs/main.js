@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V88_FIX_LOCALSTORAGE_CACHE ===");
+console.log("=== BUILD MARKER: V89_BUMP_CACHE_KEY ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
