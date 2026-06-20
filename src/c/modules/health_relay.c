@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V66_OPTIMIZE_MEMORY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V67_FIX_LOCALSTORAGE_CACHE ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

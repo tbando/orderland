@@ -35,7 +35,7 @@ function requestLocationAndWeather() {
 
   // Check localStorage cache (60 minutes)
   var lastTime = localStorage.getItem('LAST_WEATHER_TIME');
-  var lastPayload = localStorage.getItem('LAST_WEATHER_PAYLOAD');
+  var lastPayload = localStorage.getItem('LAST_WEATHER_PAYLOAD_V2');
   var now = Date.now();
 
   if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
@@ -136,7 +136,7 @@ function fetchWeather(latitude, longitude) {
           // Save to cache
           try {
             localStorage.setItem('LAST_WEATHER_TIME', Date.now().toString());
-            localStorage.setItem('LAST_WEATHER_PAYLOAD', JSON.stringify(payload));
+            localStorage.setItem('LAST_WEATHER_PAYLOAD_V2', JSON.stringify(payload));
           } catch (e) {
             console.log('pkjs: Failed to save weather to localStorage: ' + e);
           }

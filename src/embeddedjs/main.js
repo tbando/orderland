@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V87_OPTIMIZE_MEMORY ===");
+console.log("=== BUILD MARKER: V88_FIX_LOCALSTORAGE_CACHE ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -37,7 +37,9 @@ let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
 let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
 let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
-if (weatherHourlyCodesStr.length !== 24) weatherHourlyCodesStr = "AAAAAAAAAAAAAAAAAAAAAAAA";
+if (!/^[A-Z]{24}$/.test(weatherHourlyCodesStr)) {
+  weatherHourlyCodesStr = "AAAAAAAAAAAAAAAAAAAAAAAA";
+}
 
 let isStartup = true;
 let lastMinutes = -1;
