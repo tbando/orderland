@@ -1,7 +1,7 @@
-import Layout, { largeDigitsTexture, smallDigitsTexture, monthsTexture, daysTexture, labelsTexture } from "./emery/layout";
+import Layout, { largeDigitsTexture, smallDigitsTexture, monthsTexture, daysTexture, labelsTexture, skinHour as initSkinHour, skinMinute as initSkinMinute, skinDate as initSkinDate, skinDateM as initSkinDateM, skinDateD as initSkinDateD, skinStep as initSkinStep, skinStepL as initSkinStepL } from "./emery/layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V90_CLAY_CONFIG_COLORS ===");
+console.log("=== BUILD MARKER: V91_CLAY_CONFIG_FIX_MEM ===");
 
 function parseColor(val) {
   const r = (val >> 16) & 0xFF;
@@ -16,7 +16,13 @@ let colorMinute = localStorage.getItem("ColorMinute") || "#FFFFFF";
 let colorDate = localStorage.getItem("ColorDate") || "#FFFFFF";
 let colorSteps = localStorage.getItem("ColorSteps") || "#FFFFFF";
 
-let skinHour, skinMinute, skinDate, skinDateM, skinDateD, skinStep, skinStepL;
+let skinHour = initSkinHour;
+let skinMinute = initSkinMinute;
+let skinDate = initSkinDate;
+let skinDateM = initSkinDateM;
+let skinDateD = initSkinDateD;
+let skinStep = initSkinStep;
+let skinStepL = initSkinStepL;
 
 function rebuildSkins() {
   skinHour = new Skin({ texture: largeDigitsTexture, width:60, height:90, variants:60, color: colorHour });
@@ -27,7 +33,7 @@ function rebuildSkins() {
   skinStep = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: colorSteps });
   skinStepL = new Skin({ texture: labelsTexture, width:80, height:30, variants:80, color: colorSteps });
 }
-rebuildSkins();
+
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
