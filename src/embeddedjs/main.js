@@ -1,7 +1,7 @@
 import Layout, { Skins } from "./emery/layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V94_CLAY_MINIFY_MEM ===");
+console.log("=== BUILD MARKER: V95_SINGLE_COLOR_THEME ===");
 
 function parseColor(val) {
   const r = (val >> 16) & 0xFF;
@@ -12,29 +12,27 @@ function parseColor(val) {
 
 let cSkins = {};
 
-function mkSkin(base, key) {
-  let c = localStorage.getItem(key) || "#FFFFFF";
+function mkSkin(base, c) {
   if (c === "#FFFFFF") return base;
   return new Skin({ texture: base.texture, width: base.width, height: base.height, variants: base.variants, color: c });
 }
 
 function rebuildSkins() {
-  cSkins.H = mkSkin(Skins.digits, "ColorHour");
-  cSkins.M = mkSkin(Skins.digits, "ColorMinute");
+  let c = localStorage.getItem("ColorTheme") || "#FFFFFF";
+  cSkins.H = mkSkin(Skins.digits, c);
+  cSkins.M = cSkins.H; 
   
-  let cD = localStorage.getItem("ColorDate") || "#FFFFFF";
-  cSkins.D = (cD === "#FFFFFF") ? Skins.small : new Skin({ texture: Skins.small.texture, width:12, height:30, variants:12, color: cD });
-  cSkins.DM = (cD === "#FFFFFF") ? Skins.months : new Skin({ texture: Skins.months.texture, width:50, height:30, variants:50, color: cD });
-  cSkins.DD = (cD === "#FFFFFF") ? Skins.days : new Skin({ texture: Skins.days.texture, width:50, height:30, variants:50, color: cD });
+  cSkins.D = mkSkin(Skins.small, c);
+  cSkins.DM = mkSkin(Skins.months, c);
+  cSkins.DD = mkSkin(Skins.days, c);
   
-  let cS = localStorage.getItem("ColorSteps") || "#FFFFFF";
-  cSkins.S = (cS === "#FFFFFF") ? Skins.small : new Skin({ texture: Skins.small.texture, width:12, height:30, variants:12, color: cS });
-  cSkins.SL = (cS === "#FFFFFF") ? Skins.labels : new Skin({ texture: Skins.labels.texture, width:80, height:30, variants:80, color: cS });
+  cSkins.S = cSkins.D; 
+  cSkins.SL = mkSkin(Skins.labels, c);
 }
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS", "ColorHour", "ColorMinute", "ColorDate", "ColorSteps"], 
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS", "ColorTheme"], 
   input: 512,
   output: 512, 
   
@@ -55,21 +53,8 @@ const messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("HEALTH_STEPS", steps.toString());
-      } else if (key === "ColorHour") {
-        colorHour = parseColor(value);
-        localStorage.setItem("ColorHour", colorHour);
-        shouldUpdateSkins = true;
-      } else if (key === "ColorMinute") {
-        colorMinute = parseColor(value);
-        localStorage.setItem("ColorMinute", colorMinute);
-        shouldUpdateSkins = true;
-      } else if (key === "ColorDate") {
-        colorDate = parseColor(value);
-        localStorage.setItem("ColorDate", colorDate);
-        shouldUpdateSkins = true;
-      } else if (key === "ColorSteps") {
-        colorSteps = parseColor(value);
-        localStorage.setItem("ColorSteps", colorSteps);
+      } else if (key === "ColorTheme") {
+        localStorage.setItem("ColorTheme", parseColor(value));
         shouldUpdateSkins = true;
       }
     });

@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V73_CLAY_MINIFY_MEM ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V74_SINGLE_COLOR_THEME ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

@@ -22,10 +22,7 @@
             "WEATHER_CODES",
             "REQ_WEATHER",
             "HEALTH_STEPS",
-            "ColorHour",
-            "ColorMinute",
-            "ColorDate",
-            "ColorSteps"
+            "ColorTheme"
         ],
         "projectType": "moddable",
         "resources": {
