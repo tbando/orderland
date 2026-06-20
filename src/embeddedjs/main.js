@@ -54,7 +54,7 @@ if (dStr) {
 }
 
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
-const WEIGHTS = [0.4, 0.3, 0.2, 0.1, 0.0, 0.0]; // 各セットの確率の重み
+const WEIGHTS = [0.41, 0.31, 0.23, 0.05]; // 各セットの確率の重み
 
 function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
   if ((mask & 1) && d0 === offset) return true;
