@@ -1,38 +1,11 @@
-import Layout, { Skins } from "./emery/layout";
+import Layout from "./emery/layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V95_SINGLE_COLOR_THEME ===");
-
-function parseColor(val) {
-  const r = (val >> 16) & 0xFF;
-  const g = (val >> 8) & 0xFF;
-  const b = val & 0xFF;
-  return "#" + (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
-}
-
-let cSkins = {};
-
-function mkSkin(base, c) {
-  if (c === "#FFFFFF") return base;
-  return new Skin({ texture: base.texture, width: base.width, height: base.height, variants: base.variants, color: c });
-}
-
-function rebuildSkins() {
-  let c = localStorage.getItem("ColorTheme") || "#FFFFFF";
-  cSkins.H = mkSkin(Skins.digits, c);
-  cSkins.M = cSkins.H; 
-  
-  cSkins.D = mkSkin(Skins.small, c);
-  cSkins.DM = mkSkin(Skins.months, c);
-  cSkins.DD = mkSkin(Skins.days, c);
-  
-  cSkins.S = cSkins.D; 
-  cSkins.SL = mkSkin(Skins.labels, c);
-}
+console.log("=== BUILD MARKER: V97_REMOVE_CONFIG ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS", "ColorTheme"], 
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS"], 
   input: 512,
   output: 512, 
   
@@ -53,15 +26,9 @@ const messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("HEALTH_STEPS", steps.toString());
-      } else if (key === "ColorTheme") {
-        localStorage.setItem("ColorTheme", parseColor(value));
-        shouldUpdateSkins = true;
       }
     });
 
-    if (shouldUpdateSkins) {
-      rebuildSkins();
-    }
     app.distribute("onClockChanged", { date: new Date() });
   }
 });
@@ -129,7 +96,6 @@ function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    rebuildSkins();
     application.distribute("onClockChanged", { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
@@ -223,34 +189,34 @@ class FaceApplicationBehavior {
     let content = application.first.first;
     
     // 1-4: Hours/Minutes
-    if (content) { content.variant = designOffsets[0] + newH1; content.skin = cSkins.H; content = content.next; }
-    if (content) { content.variant = designOffsets[1] + newH2; content.skin = cSkins.H; content = content.next; }
-    if (content) { content.variant = designOffsets[2] + newM1; content.skin = cSkins.M; content = content.next; }
-    if (content) { content.variant = designOffsets[3] + newM2; content.skin = cSkins.M; content = content.next; }
+    if (content) { content.variant = designOffsets[0] + newH1; content = content.next; }
+    if (content) { content.variant = designOffsets[1] + newH2; content = content.next; }
+    if (content) { content.variant = designOffsets[2] + newM1; content = content.next; }
+    if (content) { content.variant = designOffsets[3] + newM2; content = content.next; }
     
     // 5-8: Month/Date/Day
-    if (content) { content.variant = month; content.skin = cSkins.DM; content = content.next; }
-    if (content) { content.variant = Math.idiv(date, 10); content.skin = cSkins.D; content = content.next; }
-    if (content) { content.variant = date % 10; content.skin = cSkins.D; content = content.next; }
-    if (content) { content.variant = day; content.skin = cSkins.DD; content = content.next; }
+    if (content) { content.variant = month; content = content.next; }
+    if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
+    if (content) { content.variant = date % 10; content = content.next; }
+    if (content) { content.variant = day; content = content.next; }
     
     // 9: Step Label
-    if (content) { content.variant = 0; content.skin = cSkins.SL; content = content.next; } 
+    if (content) { content.variant = 0; content = content.next; } 
     
     // 10-14: Steps
     let s = Number(steps);
-    if (content) { content.variant = Math.idiv(s, 10000) % 10; content.skin = cSkins.S; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 1000) % 10; content.skin = cSkins.S; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 100) % 10; content.skin = cSkins.S; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 10) % 10; content.skin = cSkins.S; content = content.next; }
-    if (content) { content.variant = s % 10; content.skin = cSkins.S; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
+    if (content) { content.variant = s % 10; content = content.next; }
 
     // 15-19: Weather/Temp
-    if (content) { content.variant = Math.idiv(tempMax, 10); content.skin = Skins.sRed; content = content.next; }
-    if (content) { content.variant = tempMax % 10; content.skin = Skins.sRed; content = content.next; }
-    if (content) { content.variant = 10; content.skin = Skins.small; content = content.next; }
-    if (content) { content.variant = Math.idiv(tempMin, 10); content.skin = Skins.sBlue; content = content.next; }
-    if (content) { content.variant = tempMin % 10; content.skin = Skins.sBlue; content = content.next; }
+    if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
+    if (content) { content.variant = tempMax % 10; content = content.next; }
+    if (content) { content.variant = 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
+    if (content) { content.variant = tempMin % 10; content = content.next; }
 
     // 20-43: Hourly Weather
     for (let i = 0; i < 24; i++) {
