@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V86_REMOVE_UNUSED_ASSETS ===");
+console.log("=== BUILD MARKER: V87_OPTIMIZE_MEMORY ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({

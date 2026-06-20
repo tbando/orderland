@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V65_REMOVE_UNUSED_ASSETS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V66_OPTIMIZE_MEMORY ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH
