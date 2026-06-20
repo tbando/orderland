@@ -120,10 +120,15 @@ function fetchWeather(latitude, longitude) {
           var data = JSON.parse(req.responseText);
           var hourlyCodes = data.hourly.weather_code.slice(0, 24).map(mapWeatherCode);
           
+          var weatherStr = "";
+          for (var i = 0; i < hourlyCodes.length; i++) {
+            weatherStr += String.fromCharCode(65 + hourlyCodes[i]);
+          }
+
           var payload = {
             TEMP_MAX: Math.round(data.daily.temperature_2m_max[0]),
             TEMP_MIN: Math.round(data.daily.temperature_2m_min[0]),
-            WEATHER_CODES: hourlyCodes.join(",") 
+            WEATHER_CODES: weatherStr
           };
 
           console.log('pkjs: Sending weather payload to watch...');

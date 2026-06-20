@@ -20,12 +20,8 @@ const messageInstance = new Message({
         tempMin = value;
         localStorage.setItem("TEMP_MIN", value.toString());
       } else if (key === "WEATHER_CODES") {
-        const strArray = value.split(",");
-        weatherHourlyCodes = [];
-        for (let i = 0; i < strArray.length; i++) {
-          weatherHourlyCodes.push(parseInt(strArray[i], 10));
-        }
-        localStorage.setItem("WEATHER_CODES", JSON.stringify(weatherHourlyCodes));
+        weatherHourlyCodesStr = value;
+        localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("HEALTH_STEPS", steps.toString());
@@ -40,19 +36,21 @@ const messageInstance = new Message({
 let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
 let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
 let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
-let weatherHourlyCodes = JSON.parse(localStorage.getItem("WEATHER_CODES") || "[]");
-if (weatherHourlyCodes.length !== 24) weatherHourlyCodes = new Array(24).fill(0);
+let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
+if (weatherHourlyCodesStr.length !== 24) weatherHourlyCodesStr = "AAAAAAAAAAAAAAAAAAAAAAAA";
 
 let isStartup = true;
 let lastMinutes = -1;
 let designOffsets = [];
-try {
-  designOffsets = JSON.parse(localStorage.getItem("DESIGN_OFFSETS") || "[]");
-} catch (e) {
-  designOffsets = [];
+let dStr = localStorage.getItem("DESIGN_OFFSETS") || "";
+if (dStr) {
+  let arr = dStr.split(",");
+  for (let i = 0; i < arr.length; i++) {
+    designOffsets.push(parseInt(arr[i], 10));
+  }
 }
 
-const SET_COUNT = 4; // 将来6セットにする場合はここを 6 に変更
+const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
 const WEIGHTS = [0.4, 0.3, 0.2, 0.1, 0.0, 0.0]; // 各セットの確率の重み
 
 function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
@@ -179,7 +177,7 @@ class FaceApplicationBehavior {
     }
 
     if (changed) {
-      localStorage.setItem("DESIGN_OFFSETS", JSON.stringify(designOffsets));
+      localStorage.setItem("DESIGN_OFFSETS", designOffsets.join(","));
     }
 
     const month = now.getMonth();
@@ -220,7 +218,7 @@ class FaceApplicationBehavior {
     // 20-43: Hourly Weather
     for (let i = 0; i < 24; i++) {
       if (content) {
-        content.variant = weatherHourlyCodes[i];
+        content.variant = weatherHourlyCodesStr.charCodeAt(i) - 65;
         content = content.next;
       }
     }
