@@ -10,7 +10,7 @@ const monthsSkin = new Skin({ texture: new Texture(`months.png`), width:50, heig
 const daysSkin = new Skin({ texture: new Texture(`days.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
 const labelsSkin = new Skin({ texture: new Texture(`labels.png`), width:80, height:30, variants:80, color:"#FFFFFF" });
 const weatherSkin = new Skin({ texture: new Texture(`weather_dots.png`), width:6, height:6*3+2*2, variants:6});
-
+const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6, height:4});
 
 const dots = [];
 
@@ -59,7 +59,10 @@ const Layout = Container.template($ => ({
     Content($, { left:14*3+2, bottom:5+24, skin:smallBlueDigitsSkin }),
     Content($, { left:14*4+2, bottom:5+24, skin:smallBlueDigitsSkin }),
     // weather dots
-    ...dots
+    ...dots,
+    
+    // indicator
+    Content($, { skin:indicatorSkin }),
 	]
 }));
 

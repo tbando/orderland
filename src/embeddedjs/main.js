@@ -224,6 +224,9 @@ class FaceApplicationBehavior {
         content = content.next;
       }
     }
+    
+    // indicator
+    if (content) { content.coordinates = {left: 5+hours*8, bottom:28 }; content = content.next; }
   }
 }
 

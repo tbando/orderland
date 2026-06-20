@@ -13,7 +13,7 @@
 			},
 			"resources": {
 				"*-alpha": [ "./assets/large_digits_40", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"],
-        "*": ["./assets/weather_dots"]
+        "*": ["./assets/weather_dots", "./assets/indicator"]
 			}
 		},
 		"...": {
