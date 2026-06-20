@@ -1,7 +1,7 @@
-import Layout from "./emery/layout";
+import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V97_REMOVE_CONFIG ===");
+console.log("=== BUILD MARKER: V98_FIX_IMPORT ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
