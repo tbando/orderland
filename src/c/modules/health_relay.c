@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V76_FIX_IMPORT ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V77_WEATHER_DAY_REFRESH ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

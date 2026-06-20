@@ -33,12 +33,21 @@ Pebble.addEventListener('appmessage', function(e) {
 function requestLocationAndWeather() {
   console.log('pkjs: RequestLocationAndWeather() started');
 
-  // Check localStorage cache (60 minutes)
+  // Check localStorage cache (60 minutes) and same date
   var lastTime = localStorage.getItem('LAST_WEATHER_TIME');
   var lastPayload = localStorage.getItem('LAST_WEATHER_PAYLOAD_V3');
   var now = Date.now();
 
-  if (lastTime && lastPayload && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
+  var isSameDay = false;
+  if (lastTime) {
+    var lastDate = new Date(parseInt(lastTime, 10));
+    var nowDate = new Date(now);
+    isSameDay = (lastDate.getDate() === nowDate.getDate() && 
+                 lastDate.getMonth() === nowDate.getMonth() && 
+                 lastDate.getFullYear() === nowDate.getFullYear());
+  }
+
+  if (lastTime && lastPayload && isSameDay && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
     console.log('pkjs: Skipping weather fetch. Using cached weather data (within 60 mins)');
     try {
       var payload = JSON.parse(lastPayload);
