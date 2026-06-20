@@ -38,4 +38,32 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
-- Hour and minute digits use shared asset files to optimize memory usage: `large_digits_0.png` (for hours HH) and `large_digits_1.png` (for minutes MM) via skins `digitsSkin0` and `digitsSkin1` respectively. The variants configuration must align with the layout design (currently set to `variants: 60`).
+- Hour and minute digits use a single shared asset file to optimize memory usage: `large_digits_40.png` (4セット版、計40文字、各セット0〜9).
+- The `digitsSkin` is configured with `variants: 40`. The 4 digits (H1, H2, M1, M2) apply different skins based on the chosen random offsets.
+- Unused assets such as `large_digits_0.png` and `large_digits_1.png` have been deleted to clean up space and avoid packaging overhead.
+
+## Memory & Performance Constraints
+
+### 5. Memory Constraints & Freeze Prevention
+- **Watch-side RAM limitation**: The app heap size on the watch is extremely limited (~117KB total size, with ~116KB used). Setting the digit assets to 5 sets (50 variants) or 6 sets (60 variants) will cause the watchface to freeze or crash on install/startup due to C-heap exhaustion when `GBitmap` allocates memory. Keep it at 4 sets (`large_digits_40.png`) to ensure stability.
+- **JS bytecode size optimization**: Heavy inline loops or complex conditional branches expand the JS compiled bytecode. Keep helpers thin and algorithms efficient (e.g., bitmask checking and simplified index calculations) to avoid exceeding the JS heap limit.
+
+### 6. Shuffling & Duplicate Elimination
+- The 4 digits (H1, H2, M1, M2) must display variations from different sets (indexes 0 to 3) without duplicate sets.
+- A weighted random logic (`WEIGHTS = [0.4, 0.3, 0.2, 0.1]`) is applied to choose preferred sets while ensuring uniqueness.
+- Memory-efficient, allocation-free bitwise operations (`getRandomOffsetExcept2`) are used to select non-overlapping offsets.
+
+### 7. Logging Style Consistency
+- JavaScript log outputs in [pkjs/index.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/pkjs/index.js) must follow a consistent format:
+  - Enclosed in single quotes `'pkjs: ...'`.
+  - Begin with a capital letter and end with a period or exclamation mark.
+  - Cached response messages must align:
+    - Weather: `'pkjs: Skipping weather fetch. Using cached weather data (within 60 mins)'`
+    - Health: `'pkjs: Skipping health relay. Using cached health data (within 10 mins). Steps: ' + steps`
+
+## Rule Maintenance & Evolution
+
+### 8. Specification Tracking & Rule Synchronization
+- When the configuration, asset counts, or architectural rules change, you **must** update this `rules.md` file immediately to reflect the new state.
+- Keep the C-side build marker, JS-side build marker, `manifest.json` configurations, and `rules.md` in sync.
+
