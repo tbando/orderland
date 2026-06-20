@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V64_CLEANUP_LOGS ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V65_REMOVE_UNUSED_ASSETS ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH
