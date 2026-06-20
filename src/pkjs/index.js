@@ -42,9 +42,7 @@ function requestLocationAndWeather() {
   if (lastTime) {
     var lastDate = new Date(parseInt(lastTime, 10));
     var nowDate = new Date(now);
-    isSameDay = (lastDate.getDate() === nowDate.getDate() && 
-                 lastDate.getMonth() === nowDate.getMonth() && 
-                 lastDate.getFullYear() === nowDate.getFullYear());
+    isSameDay = (lastDate.getDate() === nowDate.getDate());
   }
 
   if (lastTime && lastPayload && isSameDay && (now - parseInt(lastTime, 10) < 60 * 60 * 1000)) {
