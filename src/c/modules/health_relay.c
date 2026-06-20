@@ -78,7 +78,7 @@ static void health_event_handler(HealthEventType event, void *context) {
 }
 
 void health_relay_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V68_BUMP_CACHE_KEY ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V69_CLAY_CONFIG_COLORS ===");
 
   s_is_initialized = false;
 #ifdef PBL_HEALTH

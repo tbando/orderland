@@ -1,16 +1,43 @@
-import Layout from "layout";
+import Layout, { largeDigitsTexture, smallDigitsTexture, monthsTexture, daysTexture, labelsTexture } from "./emery/layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V89_BUMP_CACHE_KEY ===");
+console.log("=== BUILD MARKER: V90_CLAY_CONFIG_COLORS ===");
+
+function parseColor(val) {
+  const r = (val >> 16) & 0xFF;
+  const g = (val >> 8) & 0xFF;
+  const b = val & 0xFF;
+  const hex = (r << 16 | g << 8 | b).toString(16).padStart(6, '0');
+  return "#" + hex;
+}
+
+let colorHour = localStorage.getItem("ColorHour") || "#FFFFFF";
+let colorMinute = localStorage.getItem("ColorMinute") || "#FFFFFF";
+let colorDate = localStorage.getItem("ColorDate") || "#FFFFFF";
+let colorSteps = localStorage.getItem("ColorSteps") || "#FFFFFF";
+
+let skinHour, skinMinute, skinDate, skinDateM, skinDateD, skinStep, skinStepL;
+
+function rebuildSkins() {
+  skinHour = new Skin({ texture: largeDigitsTexture, width:60, height:90, variants:60, color: colorHour });
+  skinMinute = new Skin({ texture: largeDigitsTexture, width:60, height:90, variants:60, color: colorMinute });
+  skinDate = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: colorDate });
+  skinDateM = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: colorDate });
+  skinDateD = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: colorDate });
+  skinStep = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: colorSteps });
+  skinStepL = new Skin({ texture: labelsTexture, width:80, height:30, variants:80, color: colorSteps });
+}
+rebuildSkins();
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS"], 
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS", "ColorHour", "ColorMinute", "ColorDate", "ColorSteps"], 
   input: 512,
   output: 512, 
   
   onReadable() {
     const msg = this.read();
+    let shouldUpdateSkins = false;
     
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
@@ -25,9 +52,28 @@ const messageInstance = new Message({
       } else if (key === "HEALTH_STEPS" || key === "10006") {
         steps = Number(value);
         localStorage.setItem("HEALTH_STEPS", steps.toString());
+      } else if (key === "ColorHour") {
+        colorHour = parseColor(value);
+        localStorage.setItem("ColorHour", colorHour);
+        shouldUpdateSkins = true;
+      } else if (key === "ColorMinute") {
+        colorMinute = parseColor(value);
+        localStorage.setItem("ColorMinute", colorMinute);
+        shouldUpdateSkins = true;
+      } else if (key === "ColorDate") {
+        colorDate = parseColor(value);
+        localStorage.setItem("ColorDate", colorDate);
+        shouldUpdateSkins = true;
+      } else if (key === "ColorSteps") {
+        colorSteps = parseColor(value);
+        localStorage.setItem("ColorSteps", colorSteps);
+        shouldUpdateSkins = true;
       }
     });
 
+    if (shouldUpdateSkins) {
+      rebuildSkins();
+    }
     app.distribute("onClockChanged", { date: new Date() });
   }
 });
@@ -188,27 +234,27 @@ class FaceApplicationBehavior {
     let content = application.first.first;
     
     // 1-4: Hours/Minutes (HH and MM using single 40-digit image, dynamic offset)
-    if (content) { content.variant = designOffsets[0] + newH1; content = content.next; }
-    if (content) { content.variant = designOffsets[1] + newH2; content = content.next; }
-    if (content) { content.variant = designOffsets[2] + newM1; content = content.next; }
-    if (content) { content.variant = designOffsets[3] + newM2; content = content.next; }
+    if (content) { content.variant = designOffsets[0] + newH1; content.skin = skinHour; content = content.next; }
+    if (content) { content.variant = designOffsets[1] + newH2; content.skin = skinHour; content = content.next; }
+    if (content) { content.variant = designOffsets[2] + newM1; content.skin = skinMinute; content = content.next; }
+    if (content) { content.variant = designOffsets[3] + newM2; content.skin = skinMinute; content = content.next; }
     
     // 5-8: Month/Date/Day
-    if (content) { content.variant = month; content = content.next; }
-    if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
-    if (content) { content.variant = date % 10; content = content.next; }
-    if (content) { content.variant = day; content = content.next; }
+    if (content) { content.variant = month; content.skin = skinDateM; content = content.next; }
+    if (content) { content.variant = Math.idiv(date, 10); content.skin = skinDate; content = content.next; }
+    if (content) { content.variant = date % 10; content.skin = skinDate; content = content.next; }
+    if (content) { content.variant = day; content.skin = skinDateD; content = content.next; }
     
     // 9: Step Label
-    if (content) { content.variant = 0; content = content.next; } 
+    if (content) { content.variant = 0; content.skin = skinStepL; content = content.next; } 
     
     // 10-14: Steps (5 digits)
     let s = Number(steps);
-    if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
-    if (content) { content.variant = s % 10; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 10000) % 10; content.skin = skinStep; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 1000) % 10; content.skin = skinStep; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 100) % 10; content.skin = skinStep; content = content.next; }
+    if (content) { content.variant = Math.idiv(s, 10) % 10; content.skin = skinStep; content = content.next; }
+    if (content) { content.variant = s % 10; content.skin = skinStep; content = content.next; }
 
     // 15-19: Weather/Temp
     if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }

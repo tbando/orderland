@@ -1,14 +1,21 @@
 const backgroundSkin = new Skin({ fill:"#000000" });
 
-const digitsSkin = new Skin({ texture: new Texture(`large_digits_40.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
+export const largeDigitsTexture = new Texture(`large_digits_40.png`);
+const digitsSkin = new Skin({ texture: largeDigitsTexture, width:60, height:90, variants:60, color:"#FFFFFF" });
 
-const smallDigitsTexture = new Texture(`small_digits.png`);
+export const smallDigitsTexture = new Texture(`small_digits.png`);
 const smallDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#FFFFFF" });
 const smallRedDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#FF5500" });
 const smallBlueDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#55AAFF" });
-const monthsSkin = new Skin({ texture: new Texture(`months.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
-const daysSkin = new Skin({ texture: new Texture(`days.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
-const labelsSkin = new Skin({ texture: new Texture(`labels.png`), width:80, height:30, variants:80, color:"#FFFFFF" });
+
+export const monthsTexture = new Texture(`months.png`);
+const monthsSkin = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color:"#FFFFFF" });
+
+export const daysTexture = new Texture(`days.png`);
+const daysSkin = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color:"#FFFFFF" });
+
+export const labelsTexture = new Texture(`labels.png`);
+const labelsSkin = new Skin({ texture: labelsTexture, width:80, height:30, variants:80, color:"#FFFFFF" });
 const weatherSkin = new Skin({ texture: new Texture(`weather_dots.png`), width:6, height:6*3+2*2, variants:6});
 const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6, height:4});
 
