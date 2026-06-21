@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V98_FIX_IMPORT ===");
+console.log("=== BUILD MARKER: V99_UPDATE_WEIGHTS ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -54,7 +54,7 @@ if (dStr) {
 }
 
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
-const WEIGHTS = [0.41, 0.31, 0.23, 0.05]; // 各セットの確率の重み
+const WEIGHTS = [0.43, 0.33, 0.23, 0.01]; // 各セットの確率の重み
 
 function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
   if ((mask & 1) && d0 === offset) return true;
