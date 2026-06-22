@@ -1,7 +1,7 @@
 import Layout from "layout";
 import Message from "pebble/message";
 
-console.log("=== BUILD MARKER: V99_UPDATE_WEIGHTS ===");
+console.log("=== BUILD MARKER: V100_DIGIT_BASED_RANDOM ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -56,22 +56,21 @@ if (dStr) {
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
 const WEIGHTS = [0.43, 0.33, 0.23, 0.01]; // 各セットの確率の重み
 
-function isOffsetUsed(offset, d0, d1, d2, d3, mask) {
-  if ((mask & 1) && d0 === offset) return true;
-  if ((mask & 2) && d1 === offset) return true;
-  if ((mask & 4) && d2 === offset) return true;
-  if ((mask & 8) && d3 === offset) return true;
-  return false;
-}
-
-function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
+function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
+  let usedOffsets = {};
+  for(let i=0; i<4; i++) {
+    if(i !== targetIdx && digits[i] === digits[targetIdx] && currentOffsets[i] !== -1) {
+      usedOffsets[currentOffsets[i]] = true;
+    }
+  }
+  
   let totalWeight = 0;
   let firstUnused = -1;
   let lastUnused = -1;
   
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+    if (!usedOffsets[offset]) {
       totalWeight += WEIGHTS[i] || 0;
       if (firstUnused === -1) firstUnused = offset;
       lastUnused = offset;
@@ -85,7 +84,7 @@ function getRandomOffsetExcept2(d0, d1, d2, d3, mask) {
   let sum = 0;
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
-    if (!isOffsetUsed(offset, d0, d1, d2, d3, mask)) {
+    if (!usedOffsets[offset]) {
       sum += WEIGHTS[i] || 0;
       if (r <= sum) return offset;
     }
@@ -118,62 +117,45 @@ class FaceApplicationBehavior {
     if (isStartup) {
       let isValid = Array.isArray(designOffsets) && designOffsets.length === 4;
       if (isValid) {
-        const d0 = designOffsets[0], d1 = designOffsets[1], d2 = designOffsets[2], d3 = designOffsets[3];
-        isValid = (d0 !== d1 && d0 !== d2 && d0 !== d3 && d1 !== d2 && d1 !== d3 && d2 !== d3) &&
-                  (d0 >= 0 && d0 < SET_COUNT * 10 && d0 % 10 === 0) &&
-                  (d1 >= 0 && d1 < SET_COUNT * 10 && d1 % 10 === 0) &&
-                  (d2 >= 0 && d2 < SET_COUNT * 10 && d2 % 10 === 0) &&
-                  (d3 >= 0 && d3 < SET_COUNT * 10 && d3 % 10 === 0);
+        let digits = [newH1, newH2, newM1, newM2];
+        for(let i=0; i<4; i++) {
+          if(designOffsets[i] < 0 || designOffsets[i] >= SET_COUNT * 10 || designOffsets[i] % 10 !== 0) isValid = false;
+        }
+        for(let i=0; i<4; i++) {
+          for(let j=i+1; j<4; j++) {
+            if(digits[i] === digits[j] && designOffsets[i] === designOffsets[j]) {
+              isValid = false;
+            }
+          }
+        }
       }
       
       if (!isValid) {
-        const d0 = getRandomOffsetExcept2(0, 0, 0, 0, 0);
-        const d1 = getRandomOffsetExcept2(d0, 0, 0, 0, 1);
-        const d2 = getRandomOffsetExcept2(d0, d1, 0, 0, 3);
-        const d3 = getRandomOffsetExcept2(d0, d1, d2, 0, 7);
-        designOffsets[0] = d0;
-        designOffsets[1] = d1;
-        designOffsets[2] = d2;
-        designOffsets[3] = d3;
+        designOffsets = [-1, -1, -1, -1];
+        let digits = [newH1, newH2, newM1, newM2];
+        for(let i=0; i<4; i++) {
+          designOffsets[i] = getRandomOffsetForDigit(i, digits, designOffsets);
+        }
         changed = true;
       }
       
       lastMinutes = minutes;
       isStartup = false;
     } else if (minutes !== lastMinutes) {
-      let updateMask = 8; // 分の2桁目は毎分必ず変わる
-      if (newM2 === 0) updateMask |= 4;
-      if (minutes === 0) updateMask |= 2;
-      if (minutes === 0 && newH2 === 0) updateMask |= 1;
+      let digits = [newH1, newH2, newM1, newM2];
+      let changedIndices = [];
+      if (minutes === 0 && newH2 === 0) changedIndices.push(0);
+      if (minutes === 0) changedIndices.push(1);
+      if (newM2 === 0) changedIndices.push(2);
+      changedIndices.push(3);
 
-      let d0 = designOffsets[0];
-      let d1 = designOffsets[1];
-      let d2 = designOffsets[2];
-      let d3 = designOffsets[3];
-
-      let mask = ~updateMask & 15;
-
-      if (updateMask & 1) {
-        d0 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
-        mask |= 1;
+      for(let i = 0; i < changedIndices.length; i++) {
+        designOffsets[changedIndices[i]] = -1;
       }
-      if (updateMask & 2) {
-        d1 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
-        mask |= 2;
+      for(let i = 0; i < changedIndices.length; i++) {
+        let idx = changedIndices[i];
+        designOffsets[idx] = getRandomOffsetForDigit(idx, digits, designOffsets);
       }
-      if (updateMask & 4) {
-        d2 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
-        mask |= 4;
-      }
-      if (updateMask & 8) {
-        d3 = getRandomOffsetExcept2(d0, d1, d2, d3, mask);
-        mask |= 8;
-      }
-
-      designOffsets[0] = d0;
-      designOffsets[1] = d1;
-      designOffsets[2] = d2;
-      designOffsets[3] = d3;
 
       lastMinutes = minutes;
       changed = true;
