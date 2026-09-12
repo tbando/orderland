@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V104_STEPS_FALLBACK ===");
+console.log("=== BUILD MARKER: V105_STEPS_QUERY ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -61,43 +61,35 @@ function setVariant(content, value) {
   return content.next;
 }
 
-// Temporary diagnostics (V103): log the first read result / failure once.
+// Health.metric.get("step count") returns 0 on current firmware despite the
+// docs, so read steps with a midnight-to-now query instead. Temporary (V105):
+// log the values once to confirm the today-query semantics on-device.
 let stepsDebugLogged = false;
-try {
-  const now = Date.now();
-  console.log("health: accessible = " +
-    Health.metric.accessible({ metric: "step count", start: now, end: now }) +
-    " (available=" + Health.access.available + ")");
-} catch (e) {
-  console.log("health: accessible check failed: " + e);
+
+function querySteps(start, end) {
+  const s = Health.metric.query({
+    metric: "step count", start, end,
+    aggregation: "sum", scope: "once"
+  });
+  return (typeof s === "number" && s > 0) ? s : 0;
 }
 
 function readSteps() {
   try {
-    let s = Health.metric.get("step count");
-    // The health service can report today's sum as 0 (same quirk the old
-    // C-side health_service_sum_today had); fall back to the last-24h sum.
-    if (!(typeof s === "number" && s > 0)) {
-      const now = Date.now();
-      const q = Health.metric.query({
-        metric: "step count",
-        start: now - 86400000,
-        end: now,
-        aggregation: "sum",
-        scope: "once"
-      });
-      if (!stepsDebugLogged) {
-        stepsDebugLogged = true;
-        console.log("health: get -> " + s + ", query 24h -> " + q + " (" + typeof q + ")");
-      }
-      if (typeof q === "number" && q > 0) s = q;
-    }
-    return (typeof s === "number" && s > 0) ? s : 0;
-  } catch (e) {
+    const now = Date.now();
+    const mid = new Date();
+    mid.setHours(0, 0, 0, 0);
+    let s = querySteps(mid.getTime(), now);
+    // Same fallback the old C-side relay had when today's sum reads 0.
+    if (s === 0) s = querySteps(now - 86400000, now);
     if (!stepsDebugLogged) {
       stepsDebugLogged = true;
-      console.log("health: step read failed: " + e);
+      console.log("health: qtoday=" + querySteps(mid.getTime(), now) +
+        " q24h=" + querySteps(now - 86400000, now));
     }
+    return s;
+  } catch (e) {
+    console.log("health: step read failed: " + e);
     return 0;
   }
 }
