@@ -1,18 +1,19 @@
 import Layout from "layout";
 import Message from "pebble/message";
+import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V100_DIGIT_BASED_RANDOM ===");
+console.log("=== BUILD MARKER: V101_NATIVE_HEALTH ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "HEALTH_STEPS"], 
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER"],
   input: 512,
-  output: 512, 
-  
+  output: 512,
+
   onReadable() {
     const msg = this.read();
     let shouldUpdateSkins = false;
-    
+
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
         tempMax = value;
@@ -23,9 +24,6 @@ const messageInstance = new Message({
       } else if (key === "WEATHER_CODES") {
         weatherHourlyCodesStr = value;
         localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
-      } else if (key === "HEALTH_STEPS" || key === "10006") {
-        steps = Number(value);
-        localStorage.setItem("HEALTH_STEPS", steps.toString());
       }
     });
 
@@ -36,7 +34,6 @@ const messageInstance = new Message({
 
 let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
 let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
-let steps = parseInt(localStorage.getItem("HEALTH_STEPS") || "0");
 let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
 if (!/^[A-Z]{24}$/.test(weatherHourlyCodesStr)) {
   weatherHourlyCodesStr = "AAAAAAAAAAAAAAAAAAAAAAAA";
@@ -55,6 +52,15 @@ if (dStr) {
 
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
 const WEIGHTS = [0.43, 0.33, 0.23, 0.01]; // 各セットの確率の重み
+
+function readSteps() {
+  try {
+    const s = Health.metric.get("step count");
+    return (typeof s === "number" && s > 0) ? s : 0;
+  } catch (e) {
+    return 0;
+  }
+}
 
 function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
   let usedOffsets = {};
@@ -99,6 +105,12 @@ class FaceApplicationBehavior {
 
     watch.addEventListener('minutechange', (clock) => {
       application.distribute("onClockChanged", clock);
+    });
+
+    // Health events (significant update / movement) trigger an immediate redraw;
+    // steps are re-read from Health.metric at render time.
+    watch.addEventListener('health', () => {
+      application.distribute("onClockChanged", { date: new Date() });
     });
   }
   
@@ -186,7 +198,7 @@ class FaceApplicationBehavior {
     if (content) { content.variant = 0; content = content.next; } 
     
     // 10-14: Steps
-    let s = Number(steps);
+    let s = readSteps();
     if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
     if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }

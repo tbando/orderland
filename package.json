@@ -18,8 +18,7 @@
             "TEMP_MAX",
             "TEMP_MIN",
             "WEATHER_CODES",
-            "REQ_WEATHER",
-            "HEALTH_STEPS"
+            "REQ_WEATHER"
         ],
         "projectType": "moddable",
         "resources": {

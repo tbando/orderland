@@ -8,35 +8,34 @@ This file serves as a guide for AI coding assistants working on the **Orderland*
 
 ## Project Overview
 Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Alloy SDK (embedded JavaScript).
-- **C-side (`src/c/`)**: Handles Pebble OS lifecycle, timers, and health sensor polling.
-- **Phone JS-side (`src/pkjs/`)**: Pebble Kit JS running on the smartphone. Fetches weather data from Open-Meteo API and relays health data.
-- **Watch JS-side (`src/embeddedjs/`)**: Moddable Alloy runtime on the watch. Controls UI layouts and logic.
+- **C-side (`src/c/`)**: Handles Pebble OS lifecycle and the periodic weather request trigger.
+- **Phone JS-side (`src/pkjs/`)**: Pebble Kit JS running on the smartphone. Fetches weather data from Open-Meteo API.
+- **Watch JS-side (`src/embeddedjs/`)**: Moddable Alloy runtime on the watch. Controls UI layouts and logic. Reads health data (steps) natively via the `pebble/health` module (SDK 4.33+ / firmware 4.32+).
 
 ## Key Rules & Architectural Decisions
 
 ### 1. Build Markers
 - **CRITICAL RULE**: Every time you modify the code, you **MUST** update (increment or rename) the `BUILD MARKER` logs. This ensures the user can verify that the new C and JS binaries have been successfully deployed.
 - Do **not** remove these logs.
-  - C-side: `APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: VXX_... ===");` in [health_relay.c](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/c/modules/health_relay.c)
+  - C-side: `APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: VXX_... ===");` in [weather_request.c](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/c/modules/weather_request.c)
   - JS-side: `console.log("=== BUILD MARKER: VXX_... ===");` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js)
 
-### 2. Weather & Health Relaying
+### 2. Weather Fetching & Health Data
 - **Weather Fetching**:
-  - The C-side triggers `REQ_WEATHER` on startup (after 5s delay) and every 60 minutes.
+  - The C-side ([weather_request.c](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/c/modules/weather_request.c)) triggers `REQ_WEATHER` on startup (after 5s delay) and every 60 minutes.
   - The Phone JS-side ([pkjs/index.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/pkjs/index.js)) intercepts `REQ_WEATHER`, checks the local cache, fetches location-based weather from Open-Meteo API, and returns weather details to the watch JS-side.
   - **Data Encoding**: To save JS and C-heap memory on the watch, hourly weather codes (0-25) are NOT sent as JSON arrays or comma-separated strings. They are encoded as a single 24-character string using `String.fromCharCode(65 + code)`. The watch decodes this string at render time using `charCodeAt`.
   - **Caching Constraint**: Weather responses are cached on the phone's `localStorage` for **60 minutes** to prevent redundant API calls when the user toggles menus or reloads the watchface.
-- **Health Data Relaying**:
-  - C-side polls steps from `HealthService` every 10 minutes and on significant updates, sending them via `HEALTH_STEPS`.
-  - Phone JS-side relays `HEALTH_STEPS` back to the watch's JS-side.
-  - **Caching Constraint**: Health data relaying is throttled on the phone's `localStorage` for **10 minutes** to prevent excessive communication overhead, especially during watchface restarts.
+- **Health Data (Native)**:
+  - The Watch JS-side reads steps natively via `import Health from "pebble/health"` and `Health.metric.get("step count")` at render time (SDK 4.33+ / firmware 4.32+). No C-side polling, no phone relay, no `HEALTH_STEPS` message key.
+  - A `watch.addEventListener('health', ...)` listener triggers an immediate redraw on health events; otherwise the per-minute redraw keeps the step count fresh.
+  - `readSteps()` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) wraps the API in try/catch and falls back to 0 (e.g. emulator without faked health data, or Pebble Health disabled).
 
 ### 3. Local Storage Behavior
 - **Watch JS-side (`src/embeddedjs/main.js`)**:
-  - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`, `HEALTH_STEPS`: Caches weather and steps to render them instantly on reload.
+  - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`: Caches weather to render it instantly on reload. Steps are read live from `pebble/health` and are not cached.
 - **Phone JS-side (`src/pkjs/index.js`)**:
   - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD`: Caches weather API payloads for 60 minutes.
-  - `LAST_HEALTH_TIME`: Caches the last timestamp when health steps were relayed to the watch (10-minute TTL).
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
@@ -61,7 +60,6 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
   - Begin with a capital letter and end with a period or exclamation mark.
   - Cached response messages must align:
     - Weather: `'pkjs: Skipping weather fetch. Using cached weather data (within 60 mins)'`
-    - Health: `'pkjs: Skipping health relay. Using cached health data (within 10 mins). Steps: ' + steps`
 
 ## Rule Maintenance & Evolution
 
