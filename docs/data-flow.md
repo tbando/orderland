@@ -40,9 +40,19 @@ Watch JS 層が描画のたびに歩数を直接読む。C 層・Phone 層は一
 
 ```js
 import Health from "pebble/health";
-const steps = Health.metric.get("step count"); // 当日の歩数
+// 当日 0 時〜現在の合計を query で取得する
+const steps = Health.metric.query({
+  metric: "step count",
+  start: midnight, end: now,
+  aggregation: "sum", scope: "once"
+});
 ```
 
+- **`Health.metric.get("step count")` は使わない**: 公式ドキュメントは
+  「当日の値を返す」としているが、実機 firmware では常に 0 を返した (実測で確認済み)。
+  そのため当日 0 時〜現在の `Health.metric.query` (aggregation: sum) を主経路とする
+- 当日 query が 0 のときは直近 24 時間合計の query にフォールバックする
+  (旧 C 実装 `health_service_sum_today` → 24h sum と同じ保険)
 - `main.js` の `readSteps()` が try/catch でラップし、取得失敗時
   (エミュレータで health データ未設定、モバイルアプリで Pebble Health 無効など) は 0 を返す
 - 毎分の再描画 (`minutechange`) のたびに再取得されるため、表示の遅延は最大 1 分

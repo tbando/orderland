@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V105_STEPS_QUERY ===");
+console.log("=== BUILD MARKER: V106_STEPS_QUERY_CLEAN ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -62,10 +62,7 @@ function setVariant(content, value) {
 }
 
 // Health.metric.get("step count") returns 0 on current firmware despite the
-// docs, so read steps with a midnight-to-now query instead. Temporary (V105):
-// log the values once to confirm the today-query semantics on-device.
-let stepsDebugLogged = false;
-
+// docs, so read steps with a midnight-to-now query instead.
 function querySteps(start, end) {
   const s = Health.metric.query({
     metric: "step count", start, end,
@@ -82,14 +79,8 @@ function readSteps() {
     let s = querySteps(mid.getTime(), now);
     // Same fallback the old C-side relay had when today's sum reads 0.
     if (s === 0) s = querySteps(now - 86400000, now);
-    if (!stepsDebugLogged) {
-      stepsDebugLogged = true;
-      console.log("health: qtoday=" + querySteps(mid.getTime(), now) +
-        " q24h=" + querySteps(now - 86400000, now));
-    }
     return s;
   } catch (e) {
-    console.log("health: step read failed: " + e);
     return 0;
   }
 }

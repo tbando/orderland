@@ -27,7 +27,8 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
   - **Data Encoding**: To save JS and C-heap memory on the watch, hourly weather codes (0-25) are NOT sent as JSON arrays or comma-separated strings. They are encoded as a single 24-character string using `String.fromCharCode(65 + code)`. The watch decodes this string at render time using `charCodeAt`.
   - **Caching Constraint**: Weather responses are cached on the phone's `localStorage` for **60 minutes** to prevent redundant API calls when the user toggles menus or reloads the watchface.
 - **Health Data (Native)**:
-  - The Watch JS-side reads steps natively via `import Health from "pebble/health"` and `Health.metric.get("step count")` at render time (SDK 4.33+ / firmware 4.32+). No C-side polling, no phone relay, no `HEALTH_STEPS` message key.
+  - The Watch JS-side reads steps natively via `import Health from "pebble/health"` at render time (SDK 4.33+ / firmware 4.32+). No C-side polling, no phone relay, no `HEALTH_STEPS` message key.
+  - **Do NOT use `Health.metric.get("step count")`**: despite the docs it always returns 0 on real firmware (verified on-device). Steps must be read via `Health.metric.query` with a midnight-to-now range (`aggregation: "sum"`, `scope: "once"`), falling back to a last-24h query when the today query reads 0.
   - A `watch.addEventListener('health', ...)` listener triggers an immediate redraw on health events; otherwise the per-minute redraw keeps the step count fresh.
   - `readSteps()` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) wraps the API in try/catch and falls back to 0 (e.g. emulator without faked health data, or Pebble Health disabled).
 

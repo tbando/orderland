@@ -38,8 +38,10 @@ Orderland は 3 つの実行環境にまたがるハイブリッド構成です�
 ### 歩数はネイティブ Health API で取得する
 
 SDK 4.33 / firmware 4.32 以降、Alloy (Watch JS 層) から `pebble/health` モジュールで
-健康データを直接読めるようになったため、歩数は描画時に
-`Health.metric.get("step count")` で同期的に取得しています。
+健康データを直接読めるようになったため、歩数は描画時に `Health.metric.query`
+(当日 0 時〜現在の sum) で同期的に取得しています。
+`Health.metric.get` はドキュメントに反して実機で常に 0 を返すため使いません
+(詳細は [data-flow.md](./data-flow.md))。
 
 かつては C 層 (`HealthService`) → AppMessage → Phone JS 層 → AppMessage → Watch JS 層
 という往復リレー (`HEALTH_STEPS` キー + 10 分スロットリング) が必要でしたが、
