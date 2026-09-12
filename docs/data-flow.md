@@ -62,7 +62,7 @@ REQ_WEATHER 受信
                    └─ 失敗 → デフォルト座標 (35.7126, 139.7800 = 東京) で取得
   → Open-Meteo API (https://api.open-meteo.com/v1/forecast)
        パラメータ: daily=temperature_2m_max,temperature_2m_min
-                  hourly=weather_code / current=weather_code
+                  hourly=weather_code
                   timezone=Asia/Tokyo / forecast_days=1
   → WMO 天気コードを内部コード 0〜25 にマッピング → 24 文字にエンコード
   → { TEMP_MAX, TEMP_MIN, WEATHER_CODES } をキャッシュ保存 + Watch へ送信

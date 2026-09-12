@@ -92,7 +92,6 @@ function fetchWeather(latitude, longitude) {
               "&longitude=" + longitude +
               "&daily=temperature_2m_max,temperature_2m_min" +
               "&hourly=weather_code" +
-              "&current=weather_code" +
               "&timezone=Asia%2FTokyo" +
               "&forecast_days=1";
 
