@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V102_RENDER_GUARD ===");
+console.log("=== BUILD MARKER: V103_HEALTH_DEBUG ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -61,11 +61,30 @@ function setVariant(content, value) {
   return content.next;
 }
 
+// Temporary diagnostics (V103): log the first read result / failure once.
+let stepsDebugLogged = false;
+try {
+  const now = Date.now();
+  console.log("health: accessible = " +
+    Health.metric.accessible({ metric: "step count", start: now, end: now }) +
+    " (available=" + Health.access.available + ")");
+} catch (e) {
+  console.log("health: accessible check failed: " + e);
+}
+
 function readSteps() {
   try {
     const s = Health.metric.get("step count");
+    if (!stepsDebugLogged) {
+      stepsDebugLogged = true;
+      console.log("health: step count -> " + s + " (" + typeof s + ")");
+    }
     return (typeof s === "number" && s > 0) ? s : 0;
   } catch (e) {
+    if (!stepsDebugLogged) {
+      stepsDebugLogged = true;
+      console.log("health: step read failed: " + e);
+    }
     return 0;
   }
 }
