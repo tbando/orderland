@@ -48,6 +48,7 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 ### 5. Memory Constraints & Freeze Prevention
 - **Watch-side RAM limitation**: The app heap size on the watch is extremely limited (~117KB total size, with ~116KB used). Setting the digit assets to 5 sets (50 variants) or 6 sets (60 variants) will cause the watchface to freeze or crash on install/startup due to C-heap exhaustion when `GBitmap` allocates memory. Keep it at 4 sets (`large_digits_40.png`) to ensure stability.
 - **JS bytecode size optimization**: Heavy inline loops or complex conditional branches expand the JS compiled bytecode. Keep helpers thin and algorithms efficient (e.g., bitmask checking and simplified index calculations) to avoid exceeding the JS heap limit.
+- **Differential rendering for battery**: Piu invalidates a content on every `variant`/`coordinates` assignment even when the value is unchanged. All variant updates in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) must go through the `setVariant()` guard helper, and the indicator's `coordinates` must only be assigned when the hour changes. `DESIGN_OFFSETS` is only written to localStorage when its serialized value actually changed. Do not revert these guards to unconditional assignments.
 
 ### 6. Shuffling & Duplicate Elimination
 - The 4 digits (H1, H2, M1, M2) must display variations from different sets (indexes 0 to 3) without duplicate sets.

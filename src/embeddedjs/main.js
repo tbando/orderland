@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V101_NATIVE_HEALTH ===");
+console.log("=== BUILD MARKER: V102_RENDER_GUARD ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -12,7 +12,6 @@ const messageInstance = new Message({
 
   onReadable() {
     const msg = this.read();
-    let shouldUpdateSkins = false;
 
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
@@ -41,6 +40,7 @@ if (!/^[A-Z]{24}$/.test(weatherHourlyCodesStr)) {
 
 let isStartup = true;
 let lastMinutes = -1;
+let lastIndicatorHour = -1;
 let designOffsets = [];
 let dStr = localStorage.getItem("DESIGN_OFFSETS") || "";
 if (dStr) {
@@ -52,6 +52,14 @@ if (dStr) {
 
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
 const WEIGHTS = [0.43, 0.33, 0.23, 0.01]; // 各セットの確率の重み
+
+// Piu invalidates a content on every variant assignment even when the value is
+// unchanged, so guard writes to keep the dirty region (and battery cost) minimal.
+function setVariant(content, value) {
+  if (!content) return null;
+  if (content.variant !== value) content.variant = value;
+  return content.next;
+}
 
 function readSteps() {
   try {
@@ -174,54 +182,58 @@ class FaceApplicationBehavior {
     }
 
     if (changed) {
-      localStorage.setItem("DESIGN_OFFSETS", designOffsets.join(","));
+      const str = designOffsets.join(",");
+      if (str !== dStr) {
+        dStr = str;
+        localStorage.setItem("DESIGN_OFFSETS", str);
+      }
     }
 
     const month = now.getMonth();
     const date = now.getDate();
     const day = now.getDay();
     let content = application.first.first;
-    
+
     // 1-4: Hours/Minutes
-    if (content) { content.variant = designOffsets[0] + newH1; content = content.next; }
-    if (content) { content.variant = designOffsets[1] + newH2; content = content.next; }
-    if (content) { content.variant = designOffsets[2] + newM1; content = content.next; }
-    if (content) { content.variant = designOffsets[3] + newM2; content = content.next; }
-    
+    content = setVariant(content, designOffsets[0] + newH1);
+    content = setVariant(content, designOffsets[1] + newH2);
+    content = setVariant(content, designOffsets[2] + newM1);
+    content = setVariant(content, designOffsets[3] + newM2);
+
     // 5-8: Month/Date/Day
-    if (content) { content.variant = month; content = content.next; }
-    if (content) { content.variant = Math.idiv(date, 10); content = content.next; }
-    if (content) { content.variant = date % 10; content = content.next; }
-    if (content) { content.variant = day; content = content.next; }
-    
+    content = setVariant(content, month);
+    content = setVariant(content, Math.idiv(date, 10));
+    content = setVariant(content, date % 10);
+    content = setVariant(content, day);
+
     // 9: Step Label
-    if (content) { content.variant = 0; content = content.next; } 
-    
+    content = setVariant(content, 0);
+
     // 10-14: Steps
     let s = readSteps();
-    if (content) { content.variant = Math.idiv(s, 10000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 1000) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 100) % 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(s, 10) % 10; content = content.next; }
-    if (content) { content.variant = s % 10; content = content.next; }
+    content = setVariant(content, Math.idiv(s, 10000) % 10);
+    content = setVariant(content, Math.idiv(s, 1000) % 10);
+    content = setVariant(content, Math.idiv(s, 100) % 10);
+    content = setVariant(content, Math.idiv(s, 10) % 10);
+    content = setVariant(content, s % 10);
 
     // 15-19: Weather/Temp
-    if (content) { content.variant = Math.idiv(tempMax, 10); content = content.next; }
-    if (content) { content.variant = tempMax % 10; content = content.next; }
-    if (content) { content.variant = 10; content = content.next; }
-    if (content) { content.variant = Math.idiv(tempMin, 10); content = content.next; }
-    if (content) { content.variant = tempMin % 10; content = content.next; }
+    content = setVariant(content, Math.idiv(tempMax, 10));
+    content = setVariant(content, tempMax % 10);
+    content = setVariant(content, 10);
+    content = setVariant(content, Math.idiv(tempMin, 10));
+    content = setVariant(content, tempMin % 10);
 
     // 20-43: Hourly Weather
     for (let i = 0; i < 24; i++) {
-      if (content) {
-        content.variant = weatherHourlyCodesStr.charCodeAt(i) - 65;
-        content = content.next;
-      }
+      content = setVariant(content, weatherHourlyCodesStr.charCodeAt(i) - 65);
     }
-    
-    // indicator
-    if (content) { content.coordinates = {left: 5+hours*8, bottom:28 }; content = content.next; }
+
+    // indicator (setting coordinates always invalidates, so move only on hour change)
+    if (content && lastIndicatorHour !== hours) {
+      lastIndicatorHour = hours;
+      content.coordinates = { left: 5 + hours * 8, bottom: 28 };
+    }
   }
 }
 
