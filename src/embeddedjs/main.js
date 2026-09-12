@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V103_HEALTH_DEBUG ===");
+console.log("=== BUILD MARKER: V104_STEPS_FALLBACK ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -74,10 +74,23 @@ try {
 
 function readSteps() {
   try {
-    const s = Health.metric.get("step count");
-    if (!stepsDebugLogged) {
-      stepsDebugLogged = true;
-      console.log("health: step count -> " + s + " (" + typeof s + ")");
+    let s = Health.metric.get("step count");
+    // The health service can report today's sum as 0 (same quirk the old
+    // C-side health_service_sum_today had); fall back to the last-24h sum.
+    if (!(typeof s === "number" && s > 0)) {
+      const now = Date.now();
+      const q = Health.metric.query({
+        metric: "step count",
+        start: now - 86400000,
+        end: now,
+        aggregation: "sum",
+        scope: "once"
+      });
+      if (!stepsDebugLogged) {
+        stepsDebugLogged = true;
+        console.log("health: get -> " + s + ", query 24h -> " + q + " (" + typeof q + ")");
+      }
+      if (typeof q === "number" && q > 0) s = q;
     }
     return (typeof s === "number" && s > 0) ? s : 0;
   } catch (e) {
