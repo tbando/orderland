@@ -16,12 +16,12 @@
 
 ## 天気コードのエンコード方式
 
-Watch 側の JS ヒープ・C ヒープを節約するため、24 時間分の天気コード (0〜25) は
+Watch 側の JS ヒープ・C ヒープを節約するため、24 時間分の天気コード (0〜27、未定義時は -1) は
 JSON 配列やカンマ区切り文字列ではなく、**1 コード = 1 文字の 24 文字文字列**として送る。
 
-- エンコード (Phone 側): `String.fromCharCode(65 + code)` — コード 0 → `"A"`、25 → `"Z"`
-- デコード (Watch 側): 描画時に `charCodeAt(i) - 65`
-- Watch 側は起動時に `/^[A-Z]{24}$/` で検証し、不正なら全時間 "Clear" (`"AAAA…A"`) にフォールバック
+- エンコード (Phone 側): `String.fromCharCode(65 + code)` — コード 0 → `"A"`、25 → `"Z"`、26 → `"["`、27 → `"\\"`、未定義 (-1) → `"@"`
+- デコード (Watch 側): 描画時に `charCodeAt(i) - 65` (未定義 `"-1"` は `WEATHER_DOT_PATTERNS[-1] || 0` により `0x000` となりその列は何も描画しない)
+- Watch 側は起動時に 24 文字でない場合や未キャッシュ時は空文字 `""` に初期化し、受信するまで全列無表示とする
 
 ## 天気リクエストのスケジュール (Watch C 層: `weather_request.c`)
 
@@ -72,7 +72,7 @@ REQ_WEATHER 受信
        パラメータ: daily=temperature_2m_max,temperature_2m_min
                   hourly=weather_code
                   timezone=Asia/Tokyo / forecast_days=1
-  → WMO 天気コードを内部コード 0〜25 にマッピング → 24 文字にエンコード
+  → WMO 天気コードを内部コード 0〜27 (未定義は -1) にマッピング → 24 文字にエンコード
   → { TEMP_MAX, TEMP_MIN, WEATHER_CODES } をキャッシュ保存 + Watch へ送信
 ```
 
@@ -93,9 +93,10 @@ REQ_WEATHER 受信
 | 55 | 8 | Drizzle: Dense | | 82 | 22 | Rain showers: Violent |
 | 56 | 9 | Freezing Drizzle: Light | | 85 | 23 | Snow showers: Slight |
 | 57 | 10 | Freezing Drizzle: Dense | | 86 | 24 | Snow showers: Heavy |
-| 61 | 11 | Rain: Slight | | 95 | 25 | Thunderstorm |
-| 63 | 12 | Rain: Moderate | | 未定義 | 0 | (Clear にフォールバック) |
-| 65 | 13 | Rain: Heavy | | | | |
+| 61 | 11 | Rain: Slight | | 95 / 97 | 25 | Thunderstorm (Slight / Moderate / Heavy) |
+| 63 | 12 | Rain: Moderate | | 96 | 26 | Thunderstorm with slight hail |
+| 65 | 13 | Rain: Heavy | | 99 | 27 | Thunderstorm with heavy hail |
+| | | | | 未定義 | -1 | (その列は何も表示しない) |
 
 ## localStorage キー一覧
 

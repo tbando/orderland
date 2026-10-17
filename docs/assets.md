@@ -24,12 +24,12 @@ alpha リソースはグレースケール + アルファとしてビルドさ�
 ## 24 時間天気ドットの配色設定 (`src/embeddedjs/emery/layout.js`)
 
 天気ドットは画像ではなく Piu の `Port` (`WeatherPortBehavior.onDraw`) で `port.fillColor` により直接描画される。
-配色と段数は `layout.js` 内の `WEATHER_COLORS` (Pebble 公式 64 色パレット: 各 RGB チャネルが `00`, `55`, `AA`, `FF`) と `WEATHER_DOT_PATTERNS` (`0x[上段][中段][下段]` の 12bit ニブル表記、全 26 天気コード対応) で定義されている。
+配色と段数は `layout.js` 内の `WEATHER_COLORS` (Pebble 公式 64 色パレット: 各 RGB チャネルが `00`, `55`, `AA`, `FF`) と `WEATHER_DOT_PATTERNS` (`0x[上段][中段][下段]` の 12bit ニブル表記、全 28 天気コード対応) で定義されている。
 
 - 1 列あたり横 6 px (8 px ピッチ × 24 列 = 190 px 幅)、縦は 6×6 px の正方形 3 段 + 隙間 2 px = 22 px 高 (`y = 16` 下段、`y = 8` 中段、`y = 0` 上段)
 - 点灯マス数が降水などの強度を表す: 下段のみ = 弱、下+中 = 中、3 段 = 強
 
-### 内部天気コード (0〜25) ごとの配色
+### 内部天気コード (0〜27) ごとの配色
 
 | コード | WMO | 天気 | 下段 (Bot) | 中段 (Mid) | 上段 (Top) |
 |---|---|---|---|---|---|
@@ -41,7 +41,7 @@ alpha リソースはグレースケール + アルファとしてビルドさ�
 | 5 | 48 | Depositing rime fog | LightGray (`#AAAAAA`) | LavenderIndigo (`#AA55FF`) | — |
 | 6–8 | 51/53/55 | Drizzle (弱/中/強) | ElectricBlue (`#00FFFF`) ×1〜3 段 | | |
 | 9 | 56 | Freezing Drizzle: Light | ElectricBlue (`#00FFFF`) | LavenderIndigo (`#AA55FF`) | — |
-| 10 | 57 | Freezing Drizzle: Dense | ElectricBlue (`#00FFFF`) ×3 段 | | |
+| 10 | 57 | Freezing Drizzle: Dense | ElectricBlue (`#00FFFF`) | ElectricBlue (`#00FFFF`) | LavenderIndigo (`#AA55FF`) |
 | 11–13 | 61/63/65 | Rain (弱/中/強) | BlueMoon (`#0055FF`) ×1〜3 段 | | |
 | 14 | 66 | Freezing Rain: Light | BlueMoon (`#0055FF`) | LavenderIndigo (`#AA55FF`) | — |
 | 15 | 67 | Freezing Rain: Heavy | BlueMoon (`#0055FF`) | BlueMoon (`#0055FF`) | LavenderIndigo (`#AA55FF`) |
@@ -49,9 +49,12 @@ alpha リソースはグレースケール + アルファとしてビルドさ�
 | 19 | 77 | Snow grains | BabyBlueEyes (`#AAAAFF`) | — | — |
 | 20–22 | 80/81/82 | Rain showers (弱/中/強) | Celeste (`#AAFFFF`) ×1〜3 段 | | |
 | 23–24 | 85/86 | Snow showers (弱/強) | MintGreen (`#AAFFAA`) ×1 / ×3 段 | | |
-| 25 | 95 | Thunderstorm | Yellow (`#FFFF00`) ×3 段 | | |
+| 25 | 95/97 | Thunderstorm | Yellow (`#FFFF00`) ×3 段 | | |
+| 26 | 96 | Thunderstorm with slight hail | Yellow (`#FFFF00`) | LavenderIndigo (`#AA55FF`) | — |
+| 27 | 99 | Thunderstorm with heavy hail | Yellow (`#FFFF00`) | Yellow (`#FFFF00`) | LavenderIndigo (`#AA55FF`) |
+| -1 | 未定義 | フォールバック | — | — | — |
 
-「—」は消灯 (黒)。
+「—」は消灯 (黒)。未定義コード (`-1` / `'@'`) や未取得時はその列の 3 段すべてを消灯する。
 
 ## その他のファイル
 

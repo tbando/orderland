@@ -72,7 +72,7 @@ new FaceApplication(null, {
 - **差分描画・グループ単位の走査スキップ**: variant / coordinates は値が変わったときだけ代入する
   (Piu は同値代入でも invalidate するため)。さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) の変化有無を判定し、変化がないグループは Piu の Content リンクリスト走査自体をスキップする。インジケータは `container.last` で直接参照する。
   詳細は [ui-spec.md](./ui-spec.md)
-- **不要なイベント起床の排除**: `watch.addEventListener("minutechange", ...)` は登録時に即座に 1 回発火するため、起動時の手動 `onClockChanged` 呼び出しは行わない。また心拍数や歩行イベントで頻繁に発火する `"health"` イベントは購読せず、歩数は毎分の `minutechange` 時に 1 回だけ取得する
+- **初回フレームのチラつき防止と不要な再処理の排除**: `onDisplaying` 内で最初のフレームが描画される前に同期的に `this.onClockChanged` を 1 回呼び出し、デフォルトの `variant = 0` (`00:00` など) がメニュー復帰時に一瞬表示されるのを防ぐ。直後に非同期発火する `minutechange` 初回コールバックは `if (!isStartup && minutes === lastMinutes && !weatherDirty) return;` で即座にスキップする。また心拍数や歩行イベントで頻繁に発火する `"health"` イベントは購読せず、歩数は毎分の `minutechange` 時に 1 回だけ取得する
 - **フラッシュ書き込みの抑制**: `DESIGN_OFFSETS` / `TEMP_MAX` / `TEMP_MIN` / `WEATHER_CODES` はすべて現在値から変わったときだけ `localStorage` に書き込む
 - **通信の抑制**: 天気は 60 分周期 + phone 側 60 分キャッシュで API・Bluetooth 通信を最小化。
   歩数はネイティブ `pebble/health` の同期読みで通信ゼロ

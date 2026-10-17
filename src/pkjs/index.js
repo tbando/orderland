@@ -80,9 +80,12 @@ function mapWeatherCode(wmoCode) {
     82: 22, // Rain showers: Violent
     85: 23, // Snow showers: Slight
     86: 24, // Snow showers: Heavy
-    95: 25  // Thunderstorm: Slight or moderate
+    95: 25, // Thunderstorm: Slight or moderate
+    96: 26, // Thunderstorm with slight hail
+    97: 25, // Heavy thunderstorm
+    99: 27  // Thunderstorm with heavy hail
   };
-  return weatherMap[wmoCode] !== undefined ? weatherMap[wmoCode] : 0;
+  return weatherMap[wmoCode] !== undefined ? weatherMap[wmoCode] : -1;
 }
 
 function fetchWeather(latitude, longitude) {

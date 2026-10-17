@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V108_WEATHER_PORT ===");
+console.log("=== BUILD MARKER: V110_NO_FLASH ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -47,8 +47,8 @@ const messageInstance = new Message({
 let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
 let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
 let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
-if (!/^[A-Z]{24}$/.test(weatherHourlyCodesStr)) {
-  weatherHourlyCodesStr = "AAAAAAAAAAAAAAAAAAAAAAAA";
+if (weatherHourlyCodesStr.length !== 24) {
+  weatherHourlyCodesStr = "";
 }
 
 let isStartup = true;
@@ -134,17 +134,20 @@ function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    // minutechange fires immediately when registered, so no manual startup
-    // distribute call is needed.
+    // Synchronously set all variants before the first frame is drawn so
+    // default variant 0 ("00:00" etc.) never flashes when returning from menu.
+    this.onClockChanged(application, { date: new Date() });
+
     watch.addEventListener('minutechange', (clock) => {
-      application.distribute("onClockChanged", clock);
+      this.onClockChanged(application, clock);
     });
   }
   
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
-    const hours = now.getHours();
     const minutes = now.getMinutes();
+    if (!isStartup && minutes === lastMinutes && !weatherDirty) return;
+    const hours = now.getHours();
 
     const newH1 = Math.idiv(hours, 10);
     const newH2 = hours % 10;

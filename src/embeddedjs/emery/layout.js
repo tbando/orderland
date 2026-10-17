@@ -28,35 +28,38 @@ export const WEATHER_COLORS = [
   "#FFFF00", // 10: GColorYellow         (Thunderstorm)
 ];
 
-// 3-tier dot pattern per internal weather code (0..25).
+// 3-tier dot pattern per internal weather code (0..27).
 // Hex 0x[Top][Mid][Bot] where each nibble (0x0..0xA) is a WEATHER_COLORS index.
+// Out-of-range / undefined codes (-1 = '@') fall back to 0x000 (blank column).
 export const WEATHER_DOT_PATTERNS = [
-  0x001, //  0 (WMO  0): Clear sky                — Bot: Orange
-  0x002, //  1 (WMO  1): Mainly clear             — Bot: White
-  0x022, //  2 (WMO  2): Partly cloudy            — Bot/Mid: White
-  0x222, //  3 (WMO  3): Overcast                 — All: White
-  0x003, //  4 (WMO 45): Fog                      — Bot: LightGray
-  0x043, //  5 (WMO 48): Depositing rime fog      — Bot: LightGray, Mid: LavenderIndigo
-  0x005, //  6 (WMO 51): Drizzle: Light           — Bot: ElectricBlue
-  0x055, //  7 (WMO 53): Drizzle: Moderate        — Bot/Mid: ElectricBlue
-  0x555, //  8 (WMO 55): Drizzle: Dense           — All: ElectricBlue
-  0x045, //  9 (WMO 56): Freezing Drizzle: Light  — Bot: ElectricBlue, Mid: LavenderIndigo
-  0x555, // 10 (WMO 57): Freezing Drizzle: Dense  — All: ElectricBlue
-  0x006, // 11 (WMO 61): Rain: Slight             — Bot: BlueMoon
-  0x066, // 12 (WMO 63): Rain: Moderate           — Bot/Mid: BlueMoon
-  0x666, // 13 (WMO 65): Rain: Heavy              — All: BlueMoon
-  0x046, // 14 (WMO 66): Freezing Rain: Light     — Bot: BlueMoon, Mid: LavenderIndigo
-  0x466, // 15 (WMO 67): Freezing Rain: Heavy     — Bot/Mid: BlueMoon, Top: LavenderIndigo
-  0x007, // 16 (WMO 71): Snow fall: Slight        — Bot: BabyBlueEyes
-  0x077, // 17 (WMO 73): Snow fall: Moderate      — Bot/Mid: BabyBlueEyes
-  0x777, // 18 (WMO 75): Snow fall: Heavy         — All: BabyBlueEyes
-  0x007, // 19 (WMO 77): Snow grains              — Bot: BabyBlueEyes
-  0x008, // 20 (WMO 80): Rain showers: Slight     — Bot: Celeste
-  0x088, // 21 (WMO 81): Rain showers: Moderate   — Bot/Mid: Celeste
-  0x888, // 22 (WMO 82): Rain showers: Violent    — All: Celeste
-  0x009, // 23 (WMO 85): Snow showers: Slight     — Bot: MintGreen
-  0x999, // 24 (WMO 86): Snow showers: Heavy      — All: MintGreen
-  0xAAA, // 25 (WMO 95): Thunderstorm             — All: Yellow
+  0x001, //  0 (WMO  0): Clear sky                       — Bot: Orange
+  0x002, //  1 (WMO  1): Mainly clear                    — Bot: White
+  0x022, //  2 (WMO  2): Partly cloudy                   — Bot/Mid: White
+  0x222, //  3 (WMO  3): Overcast                        — All: White
+  0x003, //  4 (WMO 45): Fog                             — Bot: LightGray
+  0x043, //  5 (WMO 48): Depositing rime fog             — Bot: LightGray, Mid: LavenderIndigo
+  0x005, //  6 (WMO 51): Drizzle: Light                  — Bot: ElectricBlue
+  0x055, //  7 (WMO 53): Drizzle: Moderate               — Bot/Mid: ElectricBlue
+  0x555, //  8 (WMO 55): Drizzle: Dense                  — All: ElectricBlue
+  0x045, //  9 (WMO 56): Freezing Drizzle: Light         — Bot: ElectricBlue, Mid: LavenderIndigo
+  0x455, // 10 (WMO 57): Freezing Drizzle: Dense         — Bot/Mid: ElectricBlue, Top: LavenderIndigo
+  0x006, // 11 (WMO 61): Rain: Slight                    — Bot: BlueMoon
+  0x066, // 12 (WMO 63): Rain: Moderate                  — Bot/Mid: BlueMoon
+  0x666, // 13 (WMO 65): Rain: Heavy                     — All: BlueMoon
+  0x046, // 14 (WMO 66): Freezing Rain: Light            — Bot: BlueMoon, Mid: LavenderIndigo
+  0x466, // 15 (WMO 67): Freezing Rain: Heavy            — Bot/Mid: BlueMoon, Top: LavenderIndigo
+  0x007, // 16 (WMO 71): Snow fall: Slight               — Bot: BabyBlueEyes
+  0x077, // 17 (WMO 73): Snow fall: Moderate             — Bot/Mid: BabyBlueEyes
+  0x777, // 18 (WMO 75): Snow fall: Heavy                — All: BabyBlueEyes
+  0x007, // 19 (WMO 77): Snow grains                     — Bot: BabyBlueEyes
+  0x008, // 20 (WMO 80): Rain showers: Slight            — Bot: Celeste
+  0x088, // 21 (WMO 81): Rain showers: Moderate          — Bot/Mid: Celeste
+  0x888, // 22 (WMO 82): Rain showers: Violent           — All: Celeste
+  0x009, // 23 (WMO 85): Snow showers: Slight            — Bot: MintGreen
+  0x999, // 24 (WMO 86): Snow showers: Heavy             — All: MintGreen
+  0xAAA, // 25 (WMO 95/97): Thunderstorm                 — All: Yellow
+  0x04A, // 26 (WMO 96): Thunderstorm with slight hail   — Bot: Yellow, Mid: LavenderIndigo
+  0x4AA, // 27 (WMO 99): Thunderstorm with heavy hail    — Bot/Mid: Yellow, Top: LavenderIndigo
 ];
 
 class WeatherPortBehavior extends Behavior {
