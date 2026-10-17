@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V106_STEPS_QUERY_CLEAN ===");
+console.log("=== BUILD MARKER: V107_BATTERY_OPT ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -12,21 +12,34 @@ const messageInstance = new Message({
 
   onReadable() {
     const msg = this.read();
+    let updated = false;
 
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
-        tempMax = value;
-        localStorage.setItem("TEMP_MAX", value.toString());
+        if (value !== tempMax) {
+          tempMax = value;
+          localStorage.setItem("TEMP_MAX", value.toString());
+          updated = true;
+        }
       } else if (key === "TEMP_MIN") {
-        tempMin = value;
-        localStorage.setItem("TEMP_MIN", value.toString());
+        if (value !== tempMin) {
+          tempMin = value;
+          localStorage.setItem("TEMP_MIN", value.toString());
+          updated = true;
+        }
       } else if (key === "WEATHER_CODES") {
-        weatherHourlyCodesStr = value;
-        localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
+        if (value !== weatherHourlyCodesStr) {
+          weatherHourlyCodesStr = value;
+          localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
+          updated = true;
+        }
       }
     });
 
-    app.distribute("onClockChanged", { date: new Date() });
+    if (updated) {
+      weatherDirty = true;
+      app.distribute("onClockChanged", { date: new Date() });
+    }
   }
 });
 
@@ -40,6 +53,9 @@ if (!/^[A-Z]{24}$/.test(weatherHourlyCodesStr)) {
 
 let isStartup = true;
 let lastMinutes = -1;
+let lastDate = -1;
+let lastSteps = -1;
+let weatherDirty = true;
 let lastIndicatorHour = -1;
 let designOffsets = [];
 let dStr = localStorage.getItem("DESIGN_OFFSETS") || "";
@@ -62,24 +78,18 @@ function setVariant(content, value) {
 }
 
 // Health.metric.get("step count") returns 0 on current firmware despite the
-// docs, so read steps with a midnight-to-now query instead.
-function querySteps(start, end) {
-  const s = Health.metric.query({
-    metric: "step count", start, end,
-    aggregation: "sum", scope: "once"
-  });
-  return (typeof s === "number" && s > 0) ? s : 0;
-}
-
-function readSteps() {
+// docs, so read steps with a midnight-to-now query instead. Compute midnight
+// arithmetically from the existing Date to avoid per-minute Date allocations
+// and avoid a 24h fallback query that would run twice every minute overnight.
+function readSteps(now, hours, minutes) {
   try {
-    const now = Date.now();
-    const mid = new Date();
-    mid.setHours(0, 0, 0, 0);
-    let s = querySteps(mid.getTime(), now);
-    // Same fallback the old C-side relay had when today's sum reads 0.
-    if (s === 0) s = querySteps(now - 86400000, now);
-    return s;
+    const end = now.getTime();
+    const start = end - (hours * 3600000 + minutes * 60000 + now.getSeconds() * 1000);
+    const s = Health.metric.query({
+      metric: "step count", start, end,
+      aggregation: "sum", scope: "once"
+    });
+    return (typeof s === "number" && s > 0) ? s : 0;
   } catch (e) {
     return 0;
   }
@@ -124,16 +134,10 @@ function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    application.distribute("onClockChanged", { date: new Date() });
-
+    // minutechange fires immediately when registered, so no manual startup
+    // distribute call is needed.
     watch.addEventListener('minutechange', (clock) => {
       application.distribute("onClockChanged", clock);
-    });
-
-    // Health events (significant update / movement) trigger an immediate redraw;
-    // steps are re-read from Health.metric at render time.
-    watch.addEventListener('health', () => {
-      application.distribute("onClockChanged", { date: new Date() });
     });
   }
   
@@ -204,10 +208,8 @@ class FaceApplicationBehavior {
       }
     }
 
-    const month = now.getMonth();
-    const date = now.getDate();
-    const day = now.getDay();
-    let content = application.first.first;
+    const container = application.first;
+    let content = container.first;
 
     // 1-4: Hours/Minutes
     content = setVariant(content, designOffsets[0] + newH1);
@@ -215,39 +217,53 @@ class FaceApplicationBehavior {
     content = setVariant(content, designOffsets[2] + newM1);
     content = setVariant(content, designOffsets[3] + newM2);
 
-    // 5-8: Month/Date/Day
-    content = setVariant(content, month);
-    content = setVariant(content, Math.idiv(date, 10));
-    content = setVariant(content, date % 10);
-    content = setVariant(content, day);
+    const date = now.getDate();
+    const s = readSteps(now, hours, minutes);
+    const needDate = (date !== lastDate);
+    const needSteps = (s !== lastSteps);
 
-    // 9: Step Label
-    content = setVariant(content, 0);
-
-    // 10-14: Steps
-    let s = readSteps();
-    content = setVariant(content, Math.idiv(s, 10000) % 10);
-    content = setVariant(content, Math.idiv(s, 1000) % 10);
-    content = setVariant(content, Math.idiv(s, 100) % 10);
-    content = setVariant(content, Math.idiv(s, 10) % 10);
-    content = setVariant(content, s % 10);
-
-    // 15-19: Weather/Temp
-    content = setVariant(content, Math.idiv(tempMax, 10));
-    content = setVariant(content, tempMax % 10);
-    content = setVariant(content, 10);
-    content = setVariant(content, Math.idiv(tempMin, 10));
-    content = setVariant(content, tempMin % 10);
-
-    // 20-43: Hourly Weather
-    for (let i = 0; i < 24; i++) {
-      content = setVariant(content, weatherHourlyCodesStr.charCodeAt(i) - 65);
+    // 5-8: Month/Date/Day, 9: Step Label (static variant 0)
+    if (needDate) {
+      lastDate = date;
+      content = setVariant(content, now.getMonth());
+      content = setVariant(content, Math.idiv(date, 10));
+      content = setVariant(content, date % 10);
+      content = setVariant(content, now.getDay());
+      if (content) content = content.next; // skip 9: Step Label
+    } else if (needSteps || weatherDirty) {
+      for (let i = 0; i < 5 && content; i++) content = content.next;
     }
 
-    // indicator (setting coordinates always invalidates, so move only on hour change)
-    if (content && lastIndicatorHour !== hours) {
+    // 10-14: Steps
+    if (needSteps) {
+      lastSteps = s;
+      content = setVariant(content, Math.idiv(s, 10000) % 10);
+      content = setVariant(content, Math.idiv(s, 1000) % 10);
+      content = setVariant(content, Math.idiv(s, 100) % 10);
+      content = setVariant(content, Math.idiv(s, 10) % 10);
+      content = setVariant(content, s % 10);
+    } else if (weatherDirty) {
+      for (let i = 0; i < 5 && content; i++) content = content.next;
+    }
+
+    // 15-19: Weather/Temp, 20-43: Hourly Weather (only on startup or weather update)
+    if (weatherDirty) {
+      weatherDirty = false;
+      content = setVariant(content, Math.idiv(tempMax, 10));
+      content = setVariant(content, tempMax % 10);
+      content = setVariant(content, 10);
+      content = setVariant(content, Math.idiv(tempMin, 10));
+      content = setVariant(content, tempMin % 10);
+
+      for (let i = 0; i < 24; i++) {
+        content = setVariant(content, weatherHourlyCodesStr.charCodeAt(i) - 65);
+      }
+    }
+
+    // 44: indicator (setting coordinates always invalidates, so move only on hour change)
+    if (lastIndicatorHour !== hours && container.last) {
       lastIndicatorHour = hours;
-      content.coordinates = { left: 5 + hours * 8, bottom: 28 };
+      container.last.coordinates = { left: 5 + hours * 8, bottom: 28 };
     }
   }
 }

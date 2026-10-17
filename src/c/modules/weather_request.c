@@ -3,7 +3,7 @@
 #include <message_keys.auto.h>
 
 //
-// modules/weather_request — V81 Native Health
+// modules/weather_request — V82 Battery Optimization
 //
 
 #define WEATHER_UPDATE_INTERVAL_MIN 60
@@ -51,7 +51,7 @@ static void startup_timer_handler(void *context) {
 }
 
 void weather_request_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V81_NATIVE_HEALTH ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V82_BATTERY_OPT ===");
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 	s_startup_timer = app_timer_register(5000, startup_timer_handler, NULL);

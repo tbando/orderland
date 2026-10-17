@@ -37,9 +37,9 @@ Piu は `content.variant` / `content.coordinates` への代入を、値が同じ
 invalidate + reflow するため、素朴に毎分全要素へ代入すると全 43 コンテンツが
 再描画対象になる。これを避けるため:
 
-- variant の更新は `setVariant()` ヘルパー経由で行い、**現在値と異なるときだけ代入**する。
-  毎分実際に再描画されるのは値が変わった要素 (通常は分の 1〜2 桁と歩数の下位桁) のみ
-- インジケータの `coordinates` は `lastIndicatorHour` と比較し、**時が変わったときだけ**移動する
+- variant の更新は `setVariant()` ヘルパー経由で行い、**現在値と異なるときだけ代入**する
+- さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) のグループ単位で変化判定を行い、**変化していないグループは Content の走査・variant 比較自体をスキップ**する (通常の毎分 tick では時刻 4 桁と変化時の歩数 5 桁のみを処理し、後半 29 個の気温・天気ドットは起動時と天気更新時しか走査しない)
+- インジケータ (`container.last`) の `coordinates` は `lastIndicatorHour` と比較し、**時が変わったときだけ**移動する
 
 | # | 要素 | Skin | variant の値 |
 |---|---|---|---|

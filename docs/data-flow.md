@@ -50,14 +50,12 @@ const steps = Health.metric.query({
 
 - **`Health.metric.get("step count")` は使わない**: 公式ドキュメントは
   「当日の値を返す」としているが、実機 firmware では常に 0 を返した (実測で確認済み)。
-  そのため当日 0 時〜現在の `Health.metric.query` (aggregation: sum) を主経路とする
-- 当日 query が 0 のときは直近 24 時間合計の query にフォールバックする
-  (旧 C 実装 `health_service_sum_today` → 24h sum と同じ保険)
+  そのため当日 0 時〜現在の `Health.metric.query` (aggregation: sum) を使用する
+- 0 時のタイムスタンプは既存の `Date` オブジェクトから算術計算で求め、毎分の `new Date()` 生成や夜間 (0 歩時) の 24 時間フォールバック二重クエリを行わない
 - `main.js` の `readSteps()` が try/catch でラップし、取得失敗時
   (エミュレータで health データ未設定、モバイルアプリで Pebble Health 無効など) は 0 を返す
-- 毎分の再描画 (`minutechange`) のたびに再取得されるため、表示の遅延は最大 1 分
-- さらに `watch.addEventListener("health", ...)` で health イベント
-  (significant update / movement など) を受けたら即座に再描画する
+- 毎分の `minutechange` のたびに再取得されるため、表示の遅延は最大 1 分
+  (`"health"` イベントは心拍数サンプル等でも発火しバッテリーを消費するため購読しない)
 - `package.json` の `capabilities` に `health` が必要 (継続)。モバイルアプリ側で
   Pebble Health が有効になっていることが前提
 

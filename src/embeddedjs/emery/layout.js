@@ -21,8 +21,7 @@ const dots = [];
         height: 6,
         bottom: 5,
         left: 5 + col * 8,
-        skin: weatherSkin,
-        variant: col
+        skin: weatherSkin
       })
     );
   }
