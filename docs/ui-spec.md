@@ -38,10 +38,10 @@ invalidate + reflow するため、素朴に毎分全要素へ代入すると全
 再描画対象になる。これを避けるため:
 
 - variant の更新は `setVariant()` ヘルパー経由で行い、**現在値と異なるときだけ代入**する
-- さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) のグループ単位で変化判定を行い、**変化していないグループは Content の走査・variant 比較自体をスキップ**する (通常の毎分 tick では時刻 4 桁と変化時の歩数 5 桁のみを処理し、後半 29 個の気温・天気ドットは起動時と天気更新時しか走査しない)
+- さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) のグループ単位で変化判定を行い、**変化していないグループは Content の走査・variant 比較自体をスキップ**する (通常の毎分 tick では時刻 4 桁と変化時の歩数 5 桁のみを処理し、後半の気温 5 個と天気 `Port` は起動時と天気更新時しか更新しない)
 - インジケータ (`container.last`) の `coordinates` は `lastIndicatorHour` と比較し、**時が変わったときだけ**移動する
 
-| # | 要素 | Skin | variant の値 |
+| # | 要素 | Skin / 型 | variant / 更新方法 |
 |---|---|---|---|
 | 1–4 | 時刻 H1 H2 M1 M2 | `digitsSkin` | `designOffsets[i] + 数字` (後述) |
 | 5 | 月 | `monthsSkin` | `getMonth()` (0–11) |
@@ -52,8 +52,8 @@ invalidate + reflow するため、素朴に毎分全要素へ代入すると全
 | 15–16 | 最高気温 2 桁 | `smallRedDigitsSkin` (#FF5500) | 各桁の数字 |
 | 17 | 区切り記号 | `smallDigitsSkin` | 10 固定 (small_digits.png の 11 マス目) |
 | 18–19 | 最低気温 2 桁 | `smallBlueDigitsSkin` (#55AAFF) | 各桁の数字 |
-| 20–43 | 天気ドット ×24 | `weatherSkin` | `WEATHER_CODES.charCodeAt(i) - 65` (0–25) |
-| 44 | 時刻インジケータ | `indicatorSkin` | — (coordinates を `left: 5 + hours*8` に移動) |
+| 20 | 24 時間天気ドット | `Port` (`WeatherPortBehavior`) | `delegate("onWeatherChanged", WEATHER_CODES)` で `port.invalidate()` → `onDraw` で 24 列を描画 |
+| 21 | 時刻インジケータ | `indicatorSkin` | — (coordinates を `left: 5 + hours*8` に移動) |
 
 ## 数字デザインのランダム選択 (本プロジェクトの中核仕様)
 
@@ -102,20 +102,14 @@ variant オフセット (0 / 10 / 20 / 30) を保持する。
 
 ## 24 時間天気ドットとインジケータ
 
-- 画面最下部に 6×22 px のドット列を 24 個、8 px ピッチ (`left: 5 + col*8`) で配置
+- 画面最下部に `Port` (`left: 5, bottom: 5, width: 190, height: 22`) を 1 つ配置し、24 時間分のドット列を 8 px ピッチ (`x = col*8`) でカスタム描画 (`port.fillColor`) する
 - 各列は縦に 3 マス (6×6 px、隙間 2 px) 並んでおり、**下段 1 マス = 弱、2 マス = 中、
-  3 マス = 強**のように点灯数と色で天気と強度を表す (色定義は [assets.md](./assets.md))
-- variant = その時刻の内部天気コード。`weatherSkin` は `variants: 6` (6 px ストライド) で
-  `weather_dots.png` の列を横に選択する
+  3 マス = 強**のように点灯数と色で天気と強度を表す (色・パターン定義は `layout.js` の `WEATHER_COLORS` / `WEATHER_DOT_PATTERNS`、詳細は [assets.md](./assets.md))
 - インジケータ (6×4 px の矢印) が `left: 5 + hours*8` に移動し、ドット列の真上から
   「現在の時刻」の列を指す
 
 ## 既知の制約・課題
 
-- **天気ドットの色ずれ**: 内部天気コードは 0〜25 の 26 種だが、`weather_dots.png` は
-  24 列しかない。さらに `misc/weather_dots.json5` の列定義の並び (index 9 = Light Rain など) は
-  pkjs のマッピング (index 9 = Freezing Drizzle: Light) と index 9 以降で食い違っており、
-  コード 9〜25 は意図と異なる色で描画される。コード 24, 25 はテクスチャ範囲外を参照する
 - **氷点下の気温**: 気温の描画は `Math.idiv(temp, 10)` と `temp % 10` の単純分解のため、
   負の温度では variant が負になり正しく表示できない
 - **歩数のゼロ埋め**: 歩数は常に 5 桁ゼロ埋めで表示され、先頭桁のブランク処理はない

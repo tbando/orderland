@@ -2,7 +2,7 @@ import Layout from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V107_BATTERY_OPT ===");
+console.log("=== BUILD MARKER: V108_WEATHER_PORT ===");
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
@@ -246,7 +246,7 @@ class FaceApplicationBehavior {
       for (let i = 0; i < 5 && content; i++) content = content.next;
     }
 
-    // 15-19: Weather/Temp, 20-43: Hourly Weather (only on startup or weather update)
+    // 15-19: Weather/Temp, 20: Hourly Weather Port (only on startup or weather update)
     if (weatherDirty) {
       weatherDirty = false;
       content = setVariant(content, Math.idiv(tempMax, 10));
@@ -255,12 +255,10 @@ class FaceApplicationBehavior {
       content = setVariant(content, Math.idiv(tempMin, 10));
       content = setVariant(content, tempMin % 10);
 
-      for (let i = 0; i < 24; i++) {
-        content = setVariant(content, weatherHourlyCodesStr.charCodeAt(i) - 65);
-      }
+      if (content) content.delegate("onWeatherChanged", weatherHourlyCodesStr);
     }
 
-    // 44: indicator (setting coordinates always invalidates, so move only on hour change)
+    // 21: indicator (setting coordinates always invalidates, so move only on hour change)
     if (lastIndicatorHour !== hours && container.last) {
       lastIndicatorHour = hours;
       container.last.coordinates = { left: 5 + hours * 8, bottom: 28 };

@@ -41,7 +41,8 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
 - Hour and minute digits use a single shared asset file to optimize memory usage: `large_digits_40.png` (4セット版、計40文字、各セット0〜9).
 - The `digitsSkin` is configured with `width: 60`, `variants: 60` (stride). The 4 digits (H1, H2, M1, M2) apply different variant offsets based on the chosen random offsets.
-- Unused assets such as `large_digits_0.png` and `large_digits_1.png` have been deleted to clean up space and avoid packaging overhead.
+- The 24-hour weather dots are rendered procedurally via a single Piu `Port` (`WeatherPortBehavior.onDraw` using `port.fillColor`) configured with Pebble 64-color palette constants (`WEATHER_COLORS`, `WEATHER_DOT_PATTERNS`) in `layout.js`, rather than 24 separate `Content` instances and `weather_dots.png`.
+- Unused assets such as `large_digits_0.png` and `large_digits_1.png` have been deleted, and `weather_dots` is unregistered from `manifest.json` to clean up space and avoid packaging overhead.
 
 ## Memory & Performance Constraints
 

@@ -52,7 +52,7 @@ SDK 4.33 / firmware 4.32 以降、Alloy (Watch JS 層) から `pebble/health` �
 - モジュール解決: 共通は `./main`、emery では `./emery/layout` を追加
 - リソース: `*-alpha` (アルファ付きグレースケール → 実行時に色を乗せる) として
   `large_digits_40` / `months` / `days` / `small_digits` / `labels` を、
-  フルカラー (`*`) として `weather_dots` / `indicator` を登録
+  フルカラー (`*`) として `indicator` を登録 (24 時間天気ドットは Piu の `Port` で直接描画するため画像リソース不使用)
 - emery 以外のプラットフォームはビルドエラーにしている (`"error": "Platform not supported"`)
 
 ## Application 設定 (`main.js`)

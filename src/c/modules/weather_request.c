@@ -51,7 +51,7 @@ static void startup_timer_handler(void *context) {
 }
 
 void weather_request_init(void) {
-  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V82_BATTERY_OPT ===");
+  APP_LOG(APP_LOG_LEVEL_INFO, "=== BUILD MARKER: V83_WEATHER_PORT ===");
 
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 	s_startup_timer = app_timer_register(5000, startup_timer_handler, NULL);

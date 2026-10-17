@@ -14,48 +14,44 @@ Moddable の Skin における `variants` は「variant 1 つ分の横方向ピ�
 | `months.png` | 600×30 | 50×30 | 月名 12 マス (variant = `getMonth()`) | alpha |
 | `days.png` | 350×30 | 50×30 | 曜日名 7 マス (variant = `getDay()`、0 = 日曜) | alpha |
 | `labels.png` | 70×30 | 70×30 | "STEP" ラベル 1 マス | alpha |
-| `weather_dots.png` | 144×22 | 6×22 | 天気ドット 24 列 (下記参照) | フルカラー |
+| `weather_dots.png` | 144×22 | 6×22 | 旧天気ドット画像。**マニフェスト未登録の未使用ファイル** (現在は `layout.js` の `Port` で直接描画) | — |
 | `indicator.png` | 6×4 | 6×4 | 現在時刻インジケータ | フルカラー |
 | `large_digits.png` | 3000×90 | 60×90 | 5 セット分の大型数字。**マニフェスト未登録の未使用ファイル** (メモリ制約で 4 セット運用のため) | — |
 
 alpha リソースはグレースケール + アルファとしてビルドされ、Skin の `color` プロパティで
-実行時に着色される。`weather_dots.png` と `indicator.png` はフルカラーのまま使う。
+実行時に着色される。`indicator.png` はフルカラーのまま使う。
 
-## weather_dots.png の生成 (misc/)
+## 24 時間天気ドットの配色設定 (`src/embeddedjs/emery/layout.js`)
 
-`misc/weather_dots.py` + `misc/weather_dots.json5` で生成する
-(要 Python: `json5`, `Pillow`)。生成物は `src/embeddedjs/assets/weather_dots.png` と同一。
+天気ドットは画像ではなく Piu の `Port` (`WeatherPortBehavior.onDraw`) で `port.fillColor` により直接描画される。
+配色と段数は `layout.js` 内の `WEATHER_COLORS` (Pebble 公式 64 色パレット: 各 RGB チャネルが `00`, `55`, `AA`, `FF`) と `WEATHER_DOT_PATTERNS` (`0x[上段][中段][下段]` の 12bit ニブル表記、全 26 天気コード対応) で定義されている。
 
-- パラメータ: マスサイズ `a=6`、マス間の透明ギャップ `b=2`、列数 `c=24`
-  → 画像サイズは `(a×c) × (3a+2b)` = 144×22
-- 各列は下段 A / 中段 B / 上段 C の 3 マスで構成され、json5 の `colors` 配列
-  `[A, B, C]` の順に Pebble 公式 64 色 (`GColor*` 名、エイリアス含む全 84 名対応) で指定する
+- 1 列あたり横 6 px (8 px ピッチ × 24 列 = 190 px 幅)、縦は 6×6 px の正方形 3 段 + 隙間 2 px = 22 px 高 (`y = 16` 下段、`y = 8` 中段、`y = 0` 上段)
 - 点灯マス数が降水などの強度を表す: 下段のみ = 弱、下+中 = 中、3 段 = 強
 
-### 列ごとの配色 (json5 定義)
+### 内部天気コード (0〜25) ごとの配色
 
-| 列 | 天気 | 下段 (A) | 中段 (B) | 上段 (C) |
-|---|---|---|---|---|
-| 0 | Clear Sky | Orange | — | — |
-| 1 | Few Clouds | White | — | — |
-| 2 | Scattered Clouds | White | White | — |
-| 3 | Overcast | White | White | White |
-| 4 | Fog | LightGray | — | — |
-| 5 | Freezing Fog | LightGray | LavenderIndigo | — |
-| 6–8 | Drizzle (弱/中/強) | ElectricBlue ×1〜3 段 | | |
-| 9–11 | Rain (弱/中/強) | BlueMoon ×1〜3 段 | | |
-| 12 | Light Freezing Drizzle | ElectricBlue | LavenderIndigo | — |
-| 13 | Heavy Freezing Drizzle | ElectricBlue | ElectricBlue | ElectricBlue |
-| 14–16 | Snow (弱/中/強) | BabyBlueEyes ×1〜3 段 | | |
-| 17 | Snow Grains | BabyBlueEyes | — | — |
-| 18–20 | Rain Showers (弱/中/強) | Celeste ×1〜3 段 | | |
-| 21–22 | Snow Showers (弱/強) | PaleGreen ×1 / ×3 段 | | |
-| 23 | Thunderstorm | Yellow | Yellow | Yellow |
+| コード | WMO | 天気 | 下段 (Bot) | 中段 (Mid) | 上段 (Top) |
+|---|---|---|---|---|---|
+| 0 | 0 | Clear sky | Orange (`#FF5500`) | — | — |
+| 1 | 1 | Mainly clear | White (`#FFFFFF`) | — | — |
+| 2 | 2 | Partly cloudy | White (`#FFFFFF`) | White (`#FFFFFF`) | — |
+| 3 | 3 | Overcast | White (`#FFFFFF`) | White (`#FFFFFF`) | White (`#FFFFFF`) |
+| 4 | 45 | Fog | LightGray (`#AAAAAA`) | — | — |
+| 5 | 48 | Depositing rime fog | LightGray (`#AAAAAA`) | LavenderIndigo (`#AA55FF`) | — |
+| 6–8 | 51/53/55 | Drizzle (弱/中/強) | ElectricBlue (`#00FFFF`) ×1〜3 段 | | |
+| 9 | 56 | Freezing Drizzle: Light | ElectricBlue (`#00FFFF`) | LavenderIndigo (`#AA55FF`) | — |
+| 10 | 57 | Freezing Drizzle: Dense | ElectricBlue (`#00FFFF`) ×3 段 | | |
+| 11–13 | 61/63/65 | Rain (弱/中/強) | BlueMoon (`#0055FF`) ×1〜3 段 | | |
+| 14 | 66 | Freezing Rain: Light | BlueMoon (`#0055FF`) | LavenderIndigo (`#AA55FF`) | — |
+| 15 | 67 | Freezing Rain: Heavy | BlueMoon (`#0055FF`) | BlueMoon (`#0055FF`) | LavenderIndigo (`#AA55FF`) |
+| 16–18 | 71/73/75 | Snow fall (弱/中/強) | BabyBlueEyes (`#AAAAFF`) ×1〜3 段 | | |
+| 19 | 77 | Snow grains | BabyBlueEyes (`#AAAAFF`) | — | — |
+| 20–22 | 80/81/82 | Rain showers (弱/中/強) | Celeste (`#AAFFFF`) ×1〜3 段 | | |
+| 23–24 | 85/86 | Snow showers (弱/強) | MintGreen (`#AAFFAA`) ×1 / ×3 段 | | |
+| 25 | 95 | Thunderstorm | Yellow (`#FFFF00`) ×3 段 | | |
 
 「—」は消灯 (黒)。
-
-> **注意**: この列順は pkjs の内部天気コード (0〜25) と index 9 以降で一致していない。
-> 詳細は [ui-spec.md](./ui-spec.md) の「既知の制約・課題」を参照。
 
 ## その他のファイル
 
