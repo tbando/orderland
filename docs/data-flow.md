@@ -3,7 +3,7 @@
 ## AppMessage キー
 
 `package.json` の `messageKeys` で定義。Watch JS 層の `Message` インスタンスは
-入出力とも 512 byte バッファで初期化される。
+入力 256 byte / 出力 128 byte バッファで初期化される。
 
 | キー | 方向 | 型 | 内容 |
 |---|---|---|---|
@@ -11,18 +11,7 @@
 | `TEMP_MAX` | Phone → Watch JS | int | 当日の最高気温 (℃、四捨五入) |
 | `TEMP_MIN` | Phone → Watch JS | int | 当日の最低気温 (℃、四捨五入) |
 | `WEATHER_CODES` | Phone → Watch JS | string (24 文字) | 1 時間ごとの天気コード。後述のエンコード方式 |
-| `BackgroundColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 背景色 (デフォルト `#000000`) |
-| `WeatherColorMode` | Phone (Clay) → Watch JS | string (`"0"`〜`"4"`) | 天気連動時刻カラーモード (`0`: OFF、`1`: 時・分を現在時の天気色、`2`: 時のみ現在時の天気色、`3`: 分のみ現在時の天気色、`4`: 時=現在時 / 分=1時間後の天気色) |
-| `HourColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 時 (H1/H2) の文字色 (デフォルト `#FFFFFF`) |
-| `MinuteColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 分 (M1/M2) の文字色 (デフォルト `#FFFFFF`) |
-| `TextColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 日付・曜日・歩数・気温区切りの文字色 (デフォルト `#FFFFFF`) |
-| `TempMaxColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 最高気温の文字色 (デフォルト `#FF5500`) |
-| `TempMinColor` | Phone (Clay) → Watch JS | int (`0xRRGGBB`) | 最低気温の文字色 (デフォルト `#55AAFF`) |
-| `TemperatureUnit` | Phone (Clay) → Watch JS | int (0/1) | `1`: 華氏 (°F)、`0`: 摂氏 (°C、デフォルト) |
-| `HourFormat` | Phone (Clay) → Watch JS | int (0/1) | `1`: 24 時間表記 (デフォルト)、`0`: 12 時間表記 |
-| `DigitStyle` | Phone (Clay) → Watch JS | string (`"0"`〜`"5"`) | 数字デザインスタイル (`0`: 重み付きランダム、`1`: 均等ランダム、`2`〜`5`: セット 1〜4 固定) |
-| `ShowSteps` | Phone (Clay) → Watch JS | int (0/1) | 歩数表示の ON/OFF (デフォルト `1`) |
-| `ShowWeather` | Phone (Clay) → Watch JS | int (0/1) | 天気・気温・インジケータ表示の ON/OFF (デフォルト `1`) |
+| `CFG` | Phone (Clay) → Watch JS | string (カンマ区切り 12 要素) | Clay 設定値 (`bgColor,hourColor,minuteColor,textColor,tempMaxColor,tempMinColor,weatherColorMode,useFahrenheit,use24Hour,digitStyle,showSteps,showWeather`)。Watch 側の XS チャンクヒープ節約のため Phone 側で 1 つの文字列にパックして送信 |
 
 歩数は AppMessage を経由しない (後述のネイティブ Health API で取得)。
 
@@ -130,4 +119,4 @@ REQ_WEATHER 受信
 | `TEMP_MAX` / `TEMP_MIN` | 最高・最低気温 (摂氏 ℃ で保持し、華氏設定時は描画時に換算) |
 | `WEATHER_CODES` | 24 文字の天気コード文字列 |
 | `DESIGN_OFFSETS` | 時刻 4 桁のデザインセット選択状態 (詳細は [ui-spec.md](./ui-spec.md)) |
-| `SETTINGS` | ユーザー設定の JSON (`bgColor`, `weatherColorMode`, `hourColor`, `minuteColor`, `textColor`, `tempMaxColor`, `tempMinColor`, `useFahrenheit`, `use24Hour`, `digitStyle`, `showSteps`, `showWeather`) |
+| `SETTINGS` | ユーザー設定の 12 要素 CSV 文字列 (`bgColor,hourColor,minuteColor,textColor,tempMaxColor,tempMinColor,weatherColorMode,useFahrenheit,use24Hour,digitStyle,showSteps,showWeather`) |

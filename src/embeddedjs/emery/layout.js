@@ -5,50 +5,76 @@ const daysTexture = new Texture(`days.png`);
 const labelsTexture = new Texture(`labels.png`);
 const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6, height:4});
 
-function createSkins(s) {
+let curBg, curHour, curMin, curText, curMax, curMinT;
+let bgSkin, hourSkin, minSkin, smallSkin, maxSkin, minTSkin, monthsSkin, daysSkin, labelsSkin;
+
+function syncSkins(s) {
   const hc = s.activeHourColor || s.hourColor;
   const mc = s.activeMinColor || s.minuteColor;
-  const hour = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: hc });
-  return {
-    bg: new Skin({ fill: s.bgColor }),
-    hour,
-    min: mc === hc
-      ? hour
-      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc }),
-    small: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.textColor }),
-    tempMax: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.tempMaxColor }),
-    tempMin: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.tempMinColor }),
-    months: new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: s.textColor }),
-    days: new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: s.textColor }),
-    labels: new Skin({ texture: labelsTexture, width:70, height:30, color: s.textColor }),
-  };
+  if (s.bgColor !== curBg) {
+    bgSkin = new Skin({ fill: (curBg = s.bgColor) });
+  }
+  if (hc !== curHour) {
+    hourSkin = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: (curHour = hc) });
+  }
+  if (mc !== curMin || (mc === hc && minSkin !== hourSkin)) {
+    curMin = mc;
+    minSkin = (mc === hc)
+      ? hourSkin
+      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc });
+  }
+  if (s.textColor !== curText) {
+    curText = s.textColor;
+    smallSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: curText });
+    monthsSkin = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: curText });
+    daysSkin = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: curText });
+    labelsSkin = new Skin({ texture: labelsTexture, width:70, height:30, color: curText });
+  }
+  if (s.tempMaxColor !== curMax) {
+    maxSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: (curMax = s.tempMaxColor) });
+  }
+  if (s.tempMinColor !== curMinT) {
+    minTSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: (curMinT = s.tempMinColor) });
+  }
 }
 
-export function applyTimeColors(container, hc, mc) {
-  const hour = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: hc });
-  const min = mc === hc
-    ? hour
-    : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc });
+function setSkin(c, skin, vis) {
+  if (c.skin !== skin) c.skin = skin;
+  if (vis !== undefined && c.visible !== vis) c.visible = vis;
+  return c.next;
+}
+
+export function applyTimeColors(container, s) {
+  syncSkins(s);
   let c = container.first;
-  for (let i = 0; i < 2; i++, c = c.next) c.skin = hour;
-  for (let i = 0; i < 2; i++, c = c.next) c.skin = min;
+  c = setSkin(c, hourSkin);
+  c = setSkin(c, hourSkin);
+  c = setSkin(c, minSkin);
+  setSkin(c, minSkin);
 }
 
 export function applyTheme(container, s) {
-  const skins = createSkins(s);
-  container.skin = skins.bg;
+  syncSkins(s);
+  if (container.skin !== bgSkin) container.skin = bgSkin;
   let c = container.first;
-  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.hour;
-  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.min;
-  c.skin = skins.months; c = c.next;
-  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.small;
-  c.skin = skins.days; c = c.next;
-  c.skin = skins.labels; c.visible = s.showSteps; c = c.next;
-  for (let i = 0; i < 5; i++, c = c.next) { c.skin = skins.small; c.visible = s.showSteps; }
-  for (let i = 0; i < 2; i++, c = c.next) { c.skin = skins.tempMax; c.visible = s.showWeather; }
-  c.skin = skins.small; c.visible = s.showWeather; c = c.next;
-  for (let i = 0; i < 2; i++, c = c.next) { c.skin = skins.tempMin; c.visible = s.showWeather; }
-  for (; c; c = c.next) c.visible = s.showWeather;
+  c = setSkin(c, hourSkin);
+  c = setSkin(c, hourSkin);
+  c = setSkin(c, minSkin);
+  c = setSkin(c, minSkin);
+  c = setSkin(c, monthsSkin);
+  c = setSkin(c, smallSkin);
+  c = setSkin(c, smallSkin);
+  c = setSkin(c, daysSkin);
+  c = setSkin(c, labelsSkin, s.showSteps);
+  for (let i = 0; i < 5; i++) c = setSkin(c, smallSkin, s.showSteps);
+  c = setSkin(c, maxSkin, s.showWeather);
+  c = setSkin(c, maxSkin, s.showWeather);
+  c = setSkin(c, smallSkin, s.showWeather);
+  c = setSkin(c, minTSkin, s.showWeather);
+  c = setSkin(c, minTSkin, s.showWeather);
+  for (; c; c = c.next) {
+    if (c.visible !== s.showWeather) c.visible = s.showWeather;
+  }
 }
 
 // --- Weather Dots Color & Pattern Config (Pebble 64-color palette) ---
@@ -126,38 +152,38 @@ class WeatherPortBehavior extends Behavior {
 }
 
 const Layout = Container.template($ => {
-  const skins = createSkins($);
+  syncSkins($);
   return {
-    left:0, right:0, top:0, bottom:0, skin:skins.bg,
+    left:0, right:0, top:0, bottom:0, skin:bgSkin,
     contents: [
       // hours
-      Content($, { left:0, top:10, skin:skins.hour }),
-      Content($, { left:60, top:10, skin:skins.hour }),
+      Content($, { left:0, top:10, skin:hourSkin }),
+      Content($, { left:60, top:10, skin:hourSkin }),
       // minutes
-      Content($, { left:80, top:100, skin:skins.min }),
-      Content($, { left:140, top:100, skin:skins.min }),
+      Content($, { left:80, top:100, skin:minSkin }),
+      Content($, { left:140, top:100, skin:minSkin }),
       // month
-      Content($, { left:150-2, top:10, skin:skins.months }),
+      Content($, { left:150-2, top:10, skin:monthsSkin }),
       // date
-      Content($, { left:176-2, top:35, skin:skins.small }),
-      Content($, { left:188-2, top:35, skin:skins.small }),
+      Content($, { left:176-2, top:35, skin:smallSkin }),
+      Content($, { left:188-2, top:35, skin:smallSkin }),
       // day
-      Content($, { left:150-2, top:60, skin:skins.days }),
+      Content($, { left:150-2, top:60, skin:daysSkin }),
       // step label
-      Content($, { left:0+2, top:105, skin:skins.labels, visible:$.showSteps }),
+      Content($, { left:0+2, top:105, skin:labelsSkin, visible:$.showSteps }),
       // step
-      Content($, { left:14*0+2, top:130, skin:skins.small, visible:$.showSteps }),
-      Content($, { left:14*1+2, top:130, skin:skins.small, visible:$.showSteps }),
-      Content($, { left:14*2+2, top:130, skin:skins.small, visible:$.showSteps }),
-      Content($, { left:14*3+2, top:130, skin:skins.small, visible:$.showSteps }),
-      Content($, { left:14*4+2, top:130, skin:skins.small, visible:$.showSteps }),
+      Content($, { left:14*0+2, top:130, skin:smallSkin, visible:$.showSteps }),
+      Content($, { left:14*1+2, top:130, skin:smallSkin, visible:$.showSteps }),
+      Content($, { left:14*2+2, top:130, skin:smallSkin, visible:$.showSteps }),
+      Content($, { left:14*3+2, top:130, skin:smallSkin, visible:$.showSteps }),
+      Content($, { left:14*4+2, top:130, skin:smallSkin, visible:$.showSteps }),
 
       // temp max
-      Content($, { left:14*0+2, bottom:10+24, skin:skins.tempMax, visible:$.showWeather }),
-      Content($, { left:14*1+2, bottom:10+24, skin:skins.tempMax, visible:$.showWeather }),
-      Content($, { left:14*2+2, bottom:10+24, skin:skins.small, visible:$.showWeather }),
-      Content($, { left:14*3+2, bottom:10+24, skin:skins.tempMin, visible:$.showWeather }),
-      Content($, { left:14*4+2, bottom:10+24, skin:skins.tempMin, visible:$.showWeather }),
+      Content($, { left:14*0+2, bottom:10+24, skin:maxSkin, visible:$.showWeather }),
+      Content($, { left:14*1+2, bottom:10+24, skin:maxSkin, visible:$.showWeather }),
+      Content($, { left:14*2+2, bottom:10+24, skin:smallSkin, visible:$.showWeather }),
+      Content($, { left:14*3+2, bottom:10+24, skin:minTSkin, visible:$.showWeather }),
+      Content($, { left:14*4+2, bottom:10+24, skin:minTSkin, visible:$.showWeather }),
       // weather dots (custom drawn via Port)
       Port($, { left:5, bottom:5, width:190, height:22, visible:$.showWeather, Behavior:WeatherPortBehavior }),
       

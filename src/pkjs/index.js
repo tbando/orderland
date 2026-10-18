@@ -1,6 +1,52 @@
 var Clay = require('@rebble/clay');
 var clayConfig = require('./config');
-var clay = new Clay(clayConfig);
+var clay = new Clay(clayConfig, null, { autoHandleEvents: false });
+
+function getVal(raw, key, def) {
+  var entry = raw && raw[key];
+  var v = (entry && typeof entry === 'object' && 'value' in entry) ? entry.value : entry;
+  return (v !== undefined && v !== null && v !== '') ? v : def;
+}
+
+function toHex(v, def) {
+  if (typeof v === 'number') {
+    return '#' + ((v & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
+  }
+  if (typeof v === 'string' && v.length > 0) {
+    if (v[0] === '#') return v;
+    var n = parseInt(v, 16);
+    if (!isNaN(n)) return '#' + ((n & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
+  }
+  return def;
+}
+
+Pebble.addEventListener('showConfiguration', function() {
+  Pebble.openURL(clay.generateUrl());
+});
+
+Pebble.addEventListener('webviewclosed', function(e) {
+  if (!e || !e.response) return;
+  var raw = clay.getSettings(e.response, false);
+  var cfg = [
+    toHex(getVal(raw, 'BackgroundColor'), '#000000'),
+    toHex(getVal(raw, 'HourColor'), '#FFFFFF'),
+    toHex(getVal(raw, 'MinuteColor'), '#FFFFFF'),
+    toHex(getVal(raw, 'TextColor'), '#FFFFFF'),
+    toHex(getVal(raw, 'TempMaxColor'), '#FF5500'),
+    toHex(getVal(raw, 'TempMinColor'), '#55AAFF'),
+    parseInt(getVal(raw, 'WeatherColorMode', 0), 10) || 0,
+    getVal(raw, 'TemperatureUnit', false) ? 1 : 0,
+    getVal(raw, 'HourFormat', true) ? 1 : 0,
+    parseInt(getVal(raw, 'DigitStyle', 0), 10) || 0,
+    getVal(raw, 'ShowSteps', true) ? 1 : 0,
+    getVal(raw, 'ShowWeather', true) ? 1 : 0
+  ].join(',');
+
+  Pebble.sendAppMessage({ CFG: cfg },
+    function() { console.log('pkjs: Sent config data to Pebble.'); },
+    function(err) { console.log('pkjs: Failed to send config data: ' + JSON.stringify(err)); }
+  );
+});
 
 Pebble.addEventListener('ready', function(e) {
   console.log('pkjs: JS Ready!');

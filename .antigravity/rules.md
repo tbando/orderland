@@ -34,22 +34,22 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 ### 3. Local Storage Behavior & User Settings (Clay)
 - **Watch JS-side (`src/embeddedjs/main.js`)**:
   - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`: Caches weather (in Celsius) to render it instantly on reload. Only written to `localStorage` when the received value differs from the current in-memory value. Steps are read live from `pebble/health` and are not cached.
-  - `SETTINGS`: JSON object persisting Clay user settings (`bgColor`, `weatherColorMode`, `hourColor`, `minuteColor`, `textColor`, `tempMaxColor`, `tempMinColor`, `useFahrenheit`, `use24Hour`, `digitStyle`, `showSteps`, `showWeather`), merged with `DEFAULT_SETTINGS` via spread syntax on startup.
+  - `SETTINGS`: Compact 12-field CSV string (`bgColor,hourColor,minuteColor,textColor,tempMaxColor,tempMinColor,weatherColorMode,useFahrenheit,use24Hour,digitStyle,showSteps,showWeather`) sent from Phone JS under the single `CFG` AppMessage key. Avoids `JSON.parse`/`JSON.stringify` and 12-key `Map` allocations on the watch's XS chunk heap.
 - **Phone JS-side (`src/pkjs/index.js`, `src/pkjs/config.js`)**:
   - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD_V3`: Caches weather API payloads for 60 minutes.
-  - `clay-settings`: Managed automatically by `@rebble/clay`.
+  - `clay-settings`: Managed by `@rebble/clay` (`autoHandleEvents: false`; `webviewclosed` packs the 12 Clay settings into the single `CFG` CSV string).
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
 - Hour and minute digits use a single shared asset file to optimize memory usage: `large_digits_40.png` (4セット版、計40文字、各セット0〜9).
-- Shared `Texture` instances are defined once at module scope in `layout.js`, and `createSkins(settings)` / `applyTheme(container, settings)` / `applyTimeColors(container, hourColor, minColor)` build lightweight `Skin` instances colored according to user settings or hourly weather (`getWeatherColor`) without duplicating `Texture` / `GBitmap` allocations.
+- Shared `Texture` instances and cached `Skin` instances are defined at module scope in `layout.js`. `syncSkins(settings)` / `applyTheme(container, settings)` / `applyTimeColors(container, settings)` only allocate a `new Skin` (40-byte XS host chunk) for the specific color group that actually changed, and `setSkin` guards `c.skin = skin` assignments.
 - The 24-hour weather dots are rendered procedurally via a single Piu `Port` (`WeatherPortBehavior.onDraw` using `port.fillColor`) configured with Pebble 64-color palette constants (`WEATHER_COLORS`, `WEATHER_DOT_PATTERNS`) in `layout.js`, rather than 24 separate `Content` instances and `weather_dots.png`.
 - Unused assets such as `large_digits_0.png` and `large_digits_1.png` have been deleted, and `weather_dots` is unregistered from `manifest.json` to clean up space and avoid packaging overhead.
 
 ## Memory & Performance Constraints
 
 ### 5. Memory Constraints & Freeze Prevention
-- **Watch-side RAM limitation**: The app heap size on the watch is extremely limited (~117KB total size, with ~116KB used). Setting the digit assets to 5 sets (50 variants) or 6 sets (60 variants) will cause the watchface to freeze or crash on install/startup due to C-heap exhaustion when `GBitmap` allocates memory. Keep it at 4 sets (`large_digits_40.png`) to ensure stability.
+- **Watch-side RAM & XS Chunk Heap limitation**: The app heap size on the watch is ~122KB total. Setting the digit assets to 5 sets (50 variants) or 6 sets (60 variants) will cause the watchface to freeze or crash on install/startup due to C-heap exhaustion when `GBitmap` allocates memory. Keep it at 4 sets (`large_digits_40.png`) to ensure stability. Additionally, `src/embeddedjs/manifest.json` configures `creation.chunk.initial: 14336` and `creation.heap.initial: 768` so the Moddable XS engine has sufficient chunk/slot headroom above Pebble's 8KB default.
 - **JS bytecode size optimization**: Heavy inline loops or complex conditional branches expand the JS compiled bytecode. Keep helpers thin and algorithms efficient to avoid exceeding the JS heap limit.
 - **Differential rendering for battery**: Piu invalidates a content on every `variant`/`coordinates` assignment even when the value is unchanged. All variant updates in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) must go through the `setVariant()` guard helper, unchanged groups (date, steps, weather) are skipped in `onClockChanged` to avoid unnecessary Piu node traversal, and the indicator's `coordinates` (`container.last`) must only be assigned when the hour changes. `DESIGN_OFFSETS`, `TEMP_MAX`, `TEMP_MIN`, and `WEATHER_CODES` are only written to `localStorage` when their values actually changed. `onDisplaying` calls `this.onClockChanged` synchronously before the first frame is drawn so default `variant: 0` (`00:00`) never flashes when returning from the menu, while `onClockChanged` early-returns (`!isStartup && minutes === lastMinutes && !weatherDirty`) when `minutechange`'s deferred initial callback fires in the same minute. Do not revert these guards to unconditional assignments.
 

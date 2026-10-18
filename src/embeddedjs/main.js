@@ -2,59 +2,56 @@ import Layout, { applyTheme, applyTimeColors, getWeatherColor } from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V112_WEATHER_COLOR_MODE ===");
+console.log("=== BUILD MARKER: V113_COMPACT_CFG_MEMFIX ===");
 
-const DEFAULT_SETTINGS = {
-  bgColor: "#000000",
-  weatherColorMode: 0,
-  hourColor: "#FFFFFF",
-  minuteColor: "#FFFFFF",
-  textColor: "#FFFFFF",
-  tempMaxColor: "#FF5500",
-  tempMinColor: "#55AAFF",
-  useFahrenheit: false,
-  use24Hour: true,
-  digitStyle: 0,
-  showSteps: true,
-  showWeather: true,
-};
+const DEFAULT_CFG = "#000000,#FFFFFF,#FFFFFF,#FFFFFF,#FF5500,#55AAFF,0,0,1,0,1,1";
+let settings = {};
+let isStartup = true;
+let lastMinutes = -1;
+let lastDate = -1;
+let lastSteps = -1;
+let weatherDirty = true;
+let lastIndicatorHour = -1;
+let designOffsets = [];
 
-function loadSettings() {
-  const stored = localStorage.getItem("SETTINGS");
-  if (stored) {
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
-    } catch (e) {}
+function parseCfg(str) {
+  let p = (str || DEFAULT_CFG).split(",");
+  if (p.length !== 12) p = DEFAULT_CFG.split(",");
+  const newStyle = parseInt(p[9], 10) || 0;
+  const new24h = (p[8] === "1");
+  if (settings.digitStyle !== undefined && settings.digitStyle !== newStyle) {
+    designOffsets = [];
+    isStartup = true;
   }
-  return { ...DEFAULT_SETTINGS };
+  if (settings.use24Hour !== undefined && settings.use24Hour !== new24h) {
+    isStartup = true;
+  }
+  settings.bgColor = p[0];
+  settings.hourColor = p[1];
+  settings.minuteColor = p[2];
+  settings.textColor = p[3];
+  settings.tempMaxColor = p[4];
+  settings.tempMinColor = p[5];
+  settings.weatherColorMode = parseInt(p[6], 10) || 0;
+  settings.useFahrenheit = (p[7] === "1");
+  settings.use24Hour = new24h;
+  settings.digitStyle = newStyle;
+  settings.showSteps = (p[10] === "1");
+  settings.showWeather = (p[11] === "1");
 }
 
-function saveSettings() {
-  localStorage.setItem("SETTINGS", JSON.stringify(settings));
-}
-
-function toHexColor(n) {
-  return "#" + ((n & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
-}
-
-let settings = loadSettings();
+parseCfg(localStorage.getItem("SETTINGS"));
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: [
-    "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER",
-    "BackgroundColor", "WeatherColorMode", "HourColor", "MinuteColor",
-    "TextColor", "TempMaxColor", "TempMinColor", "TemperatureUnit",
-    "HourFormat", "DigitStyle", "ShowSteps", "ShowWeather"
-  ],
-  input: 512,
-  output: 512,
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "CFG"],
+  input: 256,
+  output: 128,
 
   onReadable() {
     const msg = this.read();
     let weatherUpdated = false;
     let themeUpdated = false;
-    let settingsUpdated = false;
 
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
@@ -75,66 +72,15 @@ const messageInstance = new Message({
           localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
           weatherUpdated = true;
         }
-      } else if (key === "BackgroundColor") {
-        settings.bgColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "WeatherColorMode") {
-        settings.weatherColorMode = parseInt(value, 10) || 0;
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "HourColor") {
-        settings.hourColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "MinuteColor") {
-        settings.minuteColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "TextColor") {
-        settings.textColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "TempMaxColor") {
-        settings.tempMaxColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "TempMinColor") {
-        settings.tempMinColor = toHexColor(value);
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "TemperatureUnit") {
-        settings.useFahrenheit = (value === 1);
-        weatherUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "HourFormat") {
-        settings.use24Hour = (value === 1);
-        isStartup = true;
-        settingsUpdated = true;
-      } else if (key === "DigitStyle") {
-        const style = parseInt(value, 10) || 0;
-        if (style !== settings.digitStyle) {
-          settings.digitStyle = style;
-          designOffsets = [];
-          isStartup = true;
-        }
-        settingsUpdated = true;
-      } else if (key === "ShowSteps") {
-        settings.showSteps = (value === 1);
+      } else if (key === "CFG") {
+        localStorage.setItem("SETTINGS", value);
+        parseCfg(value);
         lastSteps = -1;
-        themeUpdated = true;
-        settingsUpdated = true;
-      } else if (key === "ShowWeather") {
-        settings.showWeather = (value === 1);
         weatherUpdated = true;
         themeUpdated = true;
-        settingsUpdated = true;
       }
     });
 
-    if (settingsUpdated) {
-      saveSettings();
-    }
     const now = new Date();
     if (themeUpdated && app.first) {
       syncTimeColors(now.getHours());
@@ -143,7 +89,7 @@ const messageInstance = new Message({
     if (weatherUpdated) {
       weatherDirty = true;
     }
-    if (weatherUpdated || themeUpdated || settingsUpdated) {
+    if (weatherUpdated || themeUpdated) {
       app.distribute("onClockChanged", { date: now });
     }
   }
@@ -182,14 +128,6 @@ function syncTimeColors(hours) {
 }
 
 syncTimeColors(new Date().getHours());
-
-let isStartup = true;
-let lastMinutes = -1;
-let lastDate = -1;
-let lastSteps = -1;
-let weatherDirty = true;
-let lastIndicatorHour = -1;
-let designOffsets = [];
 let dStr = localStorage.getItem("DESIGN_OFFSETS") || "";
 if (dStr) {
   let arr = dStr.split(",");
@@ -398,7 +336,7 @@ class FaceApplicationBehavior {
     // 15-19: Weather/Temp, 20: Hourly Weather Port (only on startup or weather update)
     const hourChanged = (lastIndicatorHour !== hours);
     if ((weatherDirty || hourChanged) && syncTimeColors(hours)) {
-      applyTimeColors(container, settings.activeHourColor, settings.activeMinColor);
+      applyTimeColors(container, settings);
     }
 
     if (weatherDirty) {

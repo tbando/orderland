@@ -21,18 +21,7 @@
             "TEMP_MIN",
             "WEATHER_CODES",
             "REQ_WEATHER",
-            "BackgroundColor",
-            "WeatherColorMode",
-            "HourColor",
-            "MinuteColor",
-            "TextColor",
-            "TempMaxColor",
-            "TempMinColor",
-            "TemperatureUnit",
-            "HourFormat",
-            "DigitStyle",
-            "ShowSteps",
-            "ShowWeather"
+            "CFG"
         ],
         "projectType": "moddable",
         "resources": {
