@@ -12,8 +12,7 @@
 				"*": "./emery/layout"
 			},
 			"resources": {
-				"*-alpha": [ "./assets/large_digits_40", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"],
-        "*": ["./assets/indicator"]
+				"*-alpha": [ "./assets/large_digits_40", "./assets/months", "./assets/days", "./assets/small_digits", "./assets/labels"]
 			}
 		},
 		"...": {

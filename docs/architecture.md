@@ -52,37 +52,34 @@ SDK 4.33 / firmware 4.32 以降、Alloy (Watch JS 層) から `pebble/health` �
 
 - モジュール解決: 共通は `./main`、emery では `./emery/layout` を追加
 - リソース: `*-alpha` (アルファ付きグレースケール → 実行時に色を乗せる) として
-  `large_digits_40` / `months` / `days` / `small_digits` / `labels` を、
-  フルカラー (`*`) として `indicator` を登録 (24 時間天気ドットは Piu の `Port` で直接描画するため画像リソース不使用)
+  `large_digits_40` / `months` / `days` / `small_digits` / `labels` を登録
+  (24 時間天気ドットと現在時刻インジケータは Piu の `Port` で直接描画するため画像リソース不使用)
 - emery 以外のプラットフォームはビルドエラーにしている (`"error": "Platform not supported"`)
 
 ## Application 設定 (`main.js`)
 
 ```js
-new FaceApplication(null, {
-  displayListLength: 2048,
+new FaceApplication(state, {
   touchCount: 0,               // watchface なのでタッチ無効
-  pixels: screen.width * 4,    // 描画バッファ 4 ライン分
 });
 ```
 
-## バッテリー / 低負荷設計
+## バッテリー / 低負荷・省メモリ設計
 
-ウェアラブルなので、毎分走るホットパス (`onClockChanged`) を最小コストに保つ。
+ウェアラブルかつ Moddable XS のヒープ制約 (8KB chunk heap / 512 slots) が厳しいため、毎分・毎時走るパスでの動的メモリ確保とフラッシュ書き込みを最小限に抑える。
 
-- **差分描画・グループ単位の走査スキップ**: variant / coordinates は値が変わったときだけ代入する
-  (Piu は同値代入でも invalidate するため)。さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) の変化有無を判定し、変化がないグループは Piu の Content リンクリスト走査自体をスキップする。インジケータは `container.last` で直接参照する。
-  詳細は [ui-spec.md](./ui-spec.md)
-- **初回フレームのチラつき防止と不要な再処理の排除**: `onDisplaying` 内で最初のフレームが描画される前に同期的に `this.onClockChanged` を 1 回呼び出し、デフォルトの `variant = 0` (`00:00` など) がメニュー復帰時に一瞬表示されるのを防ぐ。直後に非同期発火する `minutechange` 初回コールバックは `if (!isStartup && minutes === lastMinutes && !weatherDirty) return;` で即座にスキップする。また心拍数や歩行イベントで頻繁に発火する `"health"` イベントは購読せず、歩数は毎分の `minutechange` 時に 1 回だけ取得する
-- **フラッシュ書き込みの抑制**: `DESIGN_OFFSETS` / `TEMP_MAX` / `TEMP_MIN` / `WEATHER_CODES` はすべて現在値から変わったときだけ `localStorage` に書き込む
+- **単一 `Port` による描画 (`WatchfacePortBehavior`)**: `Container`・19 個の `Content`・9 個の `Skin` を廃止し、単一のフルスクリーン `Port` 上で `port.drawTexture` / `port.fillColor` を用いて全要素を描画する。これにより **約 2.2KB の XS chunk heap** と **約 60 個の XS slot** を恒久的に解放し、設定変更時や毎時の `WeatherColorMode` 色変化時にも `new Skin` の動的確保が一切発生しない
+- **毎分の動的オブジェクト生成ゼロ**: `onClockChanged` / `readSteps` / `getRandomOffsetForDigit` ではモジュールスコープの `stepQuery`・`digits` 配列およびビットマスク (`usedMask`) を再利用し、毎分の tick で Object / Array / String を一切新規確保しない
+- **AppMessage 受信時の即時 `Map` 解放**: `onReadable()` では `msg.get(...)` で値を取り出した直後に `msg.clear(); msg = null;` を呼び、`localStorage.setItem` や `onClockChanged` を実行する前に `Map` のエントリと参照を解放する
+- **初回フレームのチラつき防止と不要な再処理の排除**: `onDisplaying` 内で最初のフレームが描画される前に同期的に `this.onClockChanged` を 1 回呼び出し、デフォルトの `00:00` がメニュー復帰時に一瞬表示されるのを防ぐ。直後に非同期発火する `minutechange` 初回コールバックは `if (!isStartup && minutes === lastMinutes && !weatherDirty) return;` で即座にスキップする。また心拍数や歩行イベントで頻繁に発火する `"health"` イベントは購読せず、歩数は毎分の `minutechange` 時に 1 回だけ取得する
+- **フラッシュ書き込みの抑制**: `designOffsets` は RAM のみで保持し、毎分の `localStorage` (`SettingsFile`) 書き込みを行わない (毎分書き込むと約 3.8 時間で 8KB の `SettingsFile` が満杯になりコンパクションが走るため)。`TEMP_MAX` / `TEMP_MIN` / `WEATHER_CODES` も現在値から変わったときだけ `localStorage` に書き込む
 - **通信の抑制**: 天気は 60 分周期 + phone 側 60 分キャッシュで API・Bluetooth 通信を最小化。
   歩数はネイティブ `pebble/health` の同期読みで通信ゼロ
 - **C 層の仕事は毎時の `REQ_WEATHER` 送信のみ**。毎分の tick では剰余チェック 1 回で即 return する
-  (アプリ自体は Watch JS 層の分針更新で毎分起きるため、C 側の購読粒度を粗くしても追加の省電力効果はない)
 
 ## メモリ制約 (重要)
 
-- Watch 側のアプリヒープは約 117KB と極めて小さく、現状ほぼ使い切っている
+- Watch 側のアプリヒープは約 122KB、さらに PebbleOS ファームウェア側の Moddable XS ホスト VM は **chunk heap が 8,192 bytes (8KB) 固定**、**slot heap が 512 slots (8KB) 固定** と極めて小さい
 - 大型数字アセットを 5 セット (50 variants) 以上にすると `GBitmap` 確保時に
   C ヒープが枯渇し、インストール時・起動時にフリーズ / クラッシュする。
   **4 セット (`large_digits_40.png`) を維持すること**

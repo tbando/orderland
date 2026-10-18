@@ -118,5 +118,4 @@ REQ_WEATHER 受信
 |---|---|
 | `TEMP_MAX` / `TEMP_MIN` | 最高・最低気温 (摂氏 ℃ で保持し、華氏設定時は描画時に換算) |
 | `WEATHER_CODES` | 24 文字の天気コード文字列 |
-| `DESIGN_OFFSETS` | 時刻 4 桁のデザインセット選択状態 (詳細は [ui-spec.md](./ui-spec.md)) |
 | `SETTINGS` | ユーザー設定の 12 文字エンコード文字列 (`CFG` と同一形式) |

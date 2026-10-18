@@ -1,114 +1,83 @@
-import Layout, { applyTheme, applyTimeColors, getWeatherColor } from "layout";
+import Layout, { toColor, getWeatherColor } from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V114_CHUNK_FREED ===");
+console.log("=== BUILD MARKER: V116_SINGLE_PORT_MEMFIX ===");
 
 // 12-char ASCII config: each char is String.fromCharCode(65 + val)
 // [0..5]: 6-bit colors (bg=0, hour=63, min=63, text=63, max=52, minT=27)
 // [6..11]: weatherColorMode=0, fahrenheit=0, 24h=1, style=0, steps=1, weather=1
 const DEFAULT_CFG = "A~~~u\\AABABB";
-let settings = {};
+
 let isStartup = true;
 let lastMinutes = -1;
-let lastDate = -1;
-let lastSteps = -1;
 let weatherDirty = true;
-let lastIndicatorHour = -1;
-let designOffsets = [];
+const designOffsets = [-1, -1, -1, -1];
+const digits = [0, 0, 0, 0];
+const stepQuery = { metric: "step count", start: 0, end: 0 };
+
+const state = {
+  bgColor: 0,
+  hourColor: 0,
+  minuteColor: 0,
+  activeHourColor: 0,
+  activeMinColor: 0,
+  textColor: 0,
+  tempMaxColor: 0,
+  tempMinColor: 0,
+  weatherColorMode: 0,
+  useFahrenheit: false,
+  use24Hour: true,
+  digitStyle: 0,
+  showSteps: true,
+  showWeather: true,
+  vH1: 0,
+  vH2: 0,
+  vM1: 0,
+  vM2: 0,
+  month: 0,
+  date: 1,
+  day: 0,
+  steps: 0,
+  dMax: 0,
+  dMin: 0,
+  codes: "",
+  hour: -1,
+};
+
+let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0", 10) || 0;
+let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0", 10) || 0;
+let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
+if (weatherHourlyCodesStr.length !== 24) {
+  weatherHourlyCodesStr = "";
+}
+state.codes = weatherHourlyCodesStr;
 
 function parseCfg(str) {
   const s = (str && str.length === 12) ? str : DEFAULT_CFG;
   const newStyle = s.charCodeAt(9) - 65;
   const new24h = (s.charCodeAt(8) === 66);
-  if (settings.digitStyle !== undefined && settings.digitStyle !== newStyle) {
-    designOffsets = [];
+  if (state.digitStyle !== newStyle || state.use24Hour !== new24h) {
     isStartup = true;
   }
-  if (settings.use24Hour !== undefined && settings.use24Hour !== new24h) {
-    isStartup = true;
-  }
-  settings.bgColor = s.charCodeAt(0) - 65;
-  settings.hourColor = s.charCodeAt(1) - 65;
-  settings.minuteColor = s.charCodeAt(2) - 65;
-  settings.textColor = s.charCodeAt(3) - 65;
-  settings.tempMaxColor = s.charCodeAt(4) - 65;
-  settings.tempMinColor = s.charCodeAt(5) - 65;
-  settings.weatherColorMode = s.charCodeAt(6) - 65;
-  settings.useFahrenheit = (s.charCodeAt(7) === 66);
-  settings.use24Hour = new24h;
-  settings.digitStyle = newStyle;
-  settings.showSteps = (s.charCodeAt(10) === 66);
-  settings.showWeather = (s.charCodeAt(11) === 66);
-}
-
-parseCfg(localStorage.getItem("SETTINGS"));
-
-// 1. Initialize Message instance AT THE ABSOLUTE TOP
-const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "CFG"],
-  input: 256,
-  output: 128,
-
-  onReadable() {
-    const msg = this.read();
-    let weatherUpdated = false;
-    let themeUpdated = false;
-
-    msg.forEach((value, key) => {
-      if (key === "TEMP_MAX") {
-        if (value !== tempMax) {
-          tempMax = value;
-          localStorage.setItem("TEMP_MAX", value.toString());
-          weatherUpdated = true;
-        }
-      } else if (key === "TEMP_MIN") {
-        if (value !== tempMin) {
-          tempMin = value;
-          localStorage.setItem("TEMP_MIN", value.toString());
-          weatherUpdated = true;
-        }
-      } else if (key === "WEATHER_CODES") {
-        if (value !== weatherHourlyCodesStr) {
-          weatherHourlyCodesStr = value;
-          localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
-          weatherUpdated = true;
-        }
-      } else if (key === "CFG") {
-        localStorage.setItem("SETTINGS", value);
-        parseCfg(value);
-        lastSteps = -1;
-        weatherUpdated = true;
-        themeUpdated = true;
-      }
-    });
-
-    const now = new Date();
-    if (themeUpdated && app.first) {
-      syncTimeColors(now.getHours());
-      applyTheme(app.first, settings);
-    }
-    if (weatherUpdated) {
-      weatherDirty = true;
-    }
-    if (weatherUpdated || themeUpdated) {
-      app.distribute("onClockChanged", { date: now });
-    }
-  }
-});
-
-
-let tempMax = parseInt(localStorage.getItem("TEMP_MAX") || "0");
-let tempMin = parseInt(localStorage.getItem("TEMP_MIN") || "0");
-let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
-if (weatherHourlyCodesStr.length !== 24) {
-  weatherHourlyCodesStr = "";
+  state.bgColor = toColor(s.charCodeAt(0) - 65);
+  state.hourColor = toColor(s.charCodeAt(1) - 65);
+  state.minuteColor = toColor(s.charCodeAt(2) - 65);
+  state.textColor = toColor(s.charCodeAt(3) - 65);
+  state.tempMaxColor = toColor(s.charCodeAt(4) - 65);
+  state.tempMinColor = toColor(s.charCodeAt(5) - 65);
+  state.weatherColorMode = s.charCodeAt(6) - 65;
+  state.useFahrenheit = (s.charCodeAt(7) === 66);
+  state.use24Hour = new24h;
+  state.digitStyle = newStyle;
+  state.showSteps = (s.charCodeAt(10) === 66);
+  state.showWeather = (s.charCodeAt(11) === 66);
 }
 
 function syncTimeColors(hours) {
-  let hc = settings.hourColor;
-  let mc = settings.minuteColor;
-  const mode = settings.weatherColorMode;
+  let hc = state.hourColor;
+  let mc = state.minuteColor;
+  const mode = state.weatherColorMode;
   if (mode > 0 && weatherHourlyCodesStr.length === 24) {
     const cur = getWeatherColor(weatherHourlyCodesStr.charCodeAt(hours) - 65);
     if (mode === 1) {
@@ -123,244 +92,200 @@ function syncTimeColors(hours) {
       if (nxt) mc = nxt;
     }
   }
-  const changed = (hc !== settings.activeHourColor || mc !== settings.activeMinColor);
-  settings.activeHourColor = hc;
-  settings.activeMinColor = mc;
+  const changed = (hc !== state.activeHourColor || mc !== state.activeMinColor);
+  state.activeHourColor = hc;
+  state.activeMinColor = mc;
   return changed;
 }
 
+parseCfg(localStorage.getItem("SETTINGS"));
 syncTimeColors(new Date().getHours());
-let dStr = localStorage.getItem("DESIGN_OFFSETS") || "";
-if (dStr) {
-  let arr = dStr.split(",");
-  for (let i = 0; i < arr.length; i++) {
-    designOffsets.push(parseInt(arr[i], 10));
+
+// Initialize Message instance at module scope
+const messageInstance = new Message({
+  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER", "CFG"],
+  input: 256,
+  output: 128,
+
+  onReadable() {
+    let msg = this.read();
+    if (!msg) return;
+    const tMax = msg.get("TEMP_MAX");
+    const tMin = msg.get("TEMP_MIN");
+    const wCodes = msg.get("WEATHER_CODES");
+    const cfg = msg.get("CFG");
+    // Release Map entries & reference immediately before flash writes / UI update
+    msg.clear();
+    msg = null;
+
+    let updated = false;
+    if (tMax !== undefined && tMax !== tempMax) {
+      tempMax = tMax;
+      localStorage.setItem("TEMP_MAX", tMax.toString());
+      updated = true;
+    }
+    if (tMin !== undefined && tMin !== tempMin) {
+      tempMin = tMin;
+      localStorage.setItem("TEMP_MIN", tMin.toString());
+      updated = true;
+    }
+    if (wCodes !== undefined && wCodes !== weatherHourlyCodesStr) {
+      weatherHourlyCodesStr = wCodes;
+      state.codes = wCodes;
+      localStorage.setItem("WEATHER_CODES", wCodes);
+      updated = true;
+    }
+    if (cfg !== undefined) {
+      localStorage.setItem("SETTINGS", cfg);
+      parseCfg(cfg);
+      updated = true;
+    }
+
+    if (updated) {
+      weatherDirty = true;
+      app.distribute("onClockChanged", { date: new Date() });
+    }
   }
-}
+});
 
 const SET_COUNT = 4; // 6セットの画像を用意した際に 6 に変更してください
 const WEIGHTS = [0.43, 0.33, 0.23, 0.01]; // 各セットの確率の重み
 
-// Piu invalidates a content on every variant assignment even when the value is
-// unchanged, so guard writes to keep the dirty region (and battery cost) minimal.
-function setVariant(content, value) {
-  if (!content) return null;
-  if (content.variant !== value) content.variant = value;
-  return content.next;
-}
-
 // Health.metric.get("step count") returns 0 on current firmware despite the
-// docs, so read steps with a midnight-to-now query instead. Compute midnight
-// arithmetically from the existing Date to avoid per-minute Date allocations
-// and avoid a 24h fallback query that would run twice every minute overnight.
+// docs, so read steps with a midnight-to-now query instead. Reuses stepQuery
+// object so zero JS objects are allocated per minute.
 function readSteps(now, hours, minutes) {
   try {
     const end = now.getTime();
-    const start = end - (hours * 3600000 + minutes * 60000 + now.getSeconds() * 1000);
-    const s = Health.metric.query({
-      metric: "step count", start, end,
-      aggregation: "sum", scope: "once"
-    });
-    return (typeof s === "number" && s > 0) ? s : 0;
+    stepQuery.start = end - (hours * 3600000 + minutes * 60000 + now.getSeconds() * 1000);
+    stepQuery.end = end;
+    const s = Health.metric.query(stepQuery);
+    return (typeof s === "number" && s > 0) ? (s > 99999 ? 99999 : s) : 0;
   } catch (e) {
     return 0;
   }
 }
 
-function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
-  if (settings.digitStyle >= 2) {
-    return (settings.digitStyle - 2) * 10;
+function getRandomOffsetForDigit(targetIdx) {
+  if (state.digitStyle >= 2) {
+    return (state.digitStyle - 2) * 10;
   }
 
-  let usedOffsets = {};
-  for(let i=0; i<4; i++) {
-    if(i !== targetIdx && digits[i] === digits[targetIdx] && currentOffsets[i] !== -1) {
-      usedOffsets[currentOffsets[i]] = true;
+  let usedMask = 0;
+  const targetDigit = digits[targetIdx];
+  for (let i = 0; i < 4; i++) {
+    if (i !== targetIdx && digits[i] === targetDigit && designOffsets[i] >= 0) {
+      usedMask |= (1 << Math.idiv(designOffsets[i], 10));
     }
   }
-  
-  const equalWeight = (settings.digitStyle === 1);
+
+  const equalWeight = (state.digitStyle === 1);
   let totalWeight = 0;
   let firstUnused = -1;
   let lastUnused = -1;
-  
+
   for (let i = 0; i < SET_COUNT; i++) {
-    const offset = i * 10;
-    if (!usedOffsets[offset]) {
+    if (!(usedMask & (1 << i))) {
+      const offset = i * 10;
       totalWeight += equalWeight ? 1 : (WEIGHTS[i] || 0);
       if (firstUnused === -1) firstUnused = offset;
       lastUnused = offset;
     }
   }
-  
+
   if (lastUnused === -1) return 0;
   if (totalWeight <= 0) return firstUnused;
-  
+
   const r = Math.random() * totalWeight;
   let sum = 0;
   for (let i = 0; i < SET_COUNT; i++) {
-    const offset = i * 10;
-    if (!usedOffsets[offset]) {
+    if (!(usedMask & (1 << i))) {
       sum += equalWeight ? 1 : (WEIGHTS[i] || 0);
-      if (r <= sum) return offset;
+      if (r <= sum) return i * 10;
     }
   }
-  
+
   return lastUnused;
 }
 
 class FaceApplicationBehavior {
   onDisplaying(application) {
-    // Synchronously set all variants before the first frame is drawn so
-    // default variant 0 ("00:00" etc.) never flashes when returning from menu.
+    // Synchronously set state before the first frame is drawn so
+    // default 00:00 never flashes when returning from menu.
     this.onClockChanged(application, { date: new Date() });
 
     watch.addEventListener('minutechange', (clock) => {
       this.onClockChanged(application, clock);
     });
   }
-  
+
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
     const minutes = now.getMinutes();
-    if (!isStartup && minutes === lastMinutes && !weatherDirty && (!settings.showSteps || lastSteps !== -1)) return;
+    if (!isStartup && minutes === lastMinutes && !weatherDirty) return;
+
     const hours = now.getHours();
-    const dispHours = settings.use24Hour ? hours : (hours % 12 || 12);
+    const dispHours = state.use24Hour ? hours : (hours % 12 || 12);
 
     const newH1 = Math.idiv(dispHours, 10);
     const newH2 = dispHours % 10;
     const newM1 = Math.idiv(minutes, 10);
     const newM2 = minutes % 10;
-
-    let changed = false;
+    digits[0] = newH1;
+    digits[1] = newH2;
+    digits[2] = newM1;
+    digits[3] = newM2;
 
     if (isStartup) {
-      let isValid = Array.isArray(designOffsets) && designOffsets.length === 4;
-      if (isValid) {
-        if (settings.digitStyle >= 2) {
-          const fixedOffset = (settings.digitStyle - 2) * 10;
-          for (let i = 0; i < 4; i++) {
-            if (designOffsets[i] !== fixedOffset) isValid = false;
-          }
-        } else {
-          let digits = [newH1, newH2, newM1, newM2];
-          for(let i=0; i<4; i++) {
-            if(designOffsets[i] < 0 || designOffsets[i] >= SET_COUNT * 10 || designOffsets[i] % 10 !== 0) isValid = false;
-          }
-          for(let i=0; i<4; i++) {
-            for(let j=i+1; j<4; j++) {
-              if(digits[i] === digits[j] && designOffsets[i] === designOffsets[j]) {
-                isValid = false;
-              }
-            }
-          }
-        }
+      for (let i = 0; i < 4; i++) designOffsets[i] = -1;
+      for (let i = 0; i < 4; i++) {
+        designOffsets[i] = getRandomOffsetForDigit(i);
       }
-      
-      if (!isValid) {
-        designOffsets = [-1, -1, -1, -1];
-        let digits = [newH1, newH2, newM1, newM2];
-        for(let i=0; i<4; i++) {
-          designOffsets[i] = getRandomOffsetForDigit(i, digits, designOffsets);
-        }
-        changed = true;
-      }
-      
       lastMinutes = minutes;
       isStartup = false;
     } else if (minutes !== lastMinutes) {
-      if (settings.digitStyle < 2) {
-        let digits = [newH1, newH2, newM1, newM2];
-        let changedIndices = [];
-        if (minutes === 0 && (newH2 === 0 || (!settings.use24Hour && dispHours === 1))) changedIndices.push(0);
-        if (minutes === 0) changedIndices.push(1);
-        if (newM2 === 0) changedIndices.push(2);
-        changedIndices.push(3);
+      if (state.digitStyle < 2) {
+        const c0 = (minutes === 0 && (newH2 === 0 || (!state.use24Hour && dispHours === 1)));
+        const c1 = (minutes === 0);
+        const c2 = (newM2 === 0);
+        if (c0) designOffsets[0] = -1;
+        if (c1) designOffsets[1] = -1;
+        if (c2) designOffsets[2] = -1;
+        designOffsets[3] = -1;
 
-        for(let i = 0; i < changedIndices.length; i++) {
-          designOffsets[changedIndices[i]] = -1;
-        }
-        for(let i = 0; i < changedIndices.length; i++) {
-          let idx = changedIndices[i];
-          designOffsets[idx] = getRandomOffsetForDigit(idx, digits, designOffsets);
-        }
-        changed = true;
+        if (c0) designOffsets[0] = getRandomOffsetForDigit(0);
+        if (c1) designOffsets[1] = getRandomOffsetForDigit(1);
+        if (c2) designOffsets[2] = getRandomOffsetForDigit(2);
+        designOffsets[3] = getRandomOffsetForDigit(3);
       }
       lastMinutes = minutes;
     }
 
-    if (changed) {
-      const str = designOffsets.join(",");
-      if (str !== dStr) {
-        dStr = str;
-        localStorage.setItem("DESIGN_OFFSETS", str);
-      }
+    state.vH1 = designOffsets[0] + newH1;
+    state.vH2 = designOffsets[1] + newH2;
+    state.vM1 = designOffsets[2] + newM1;
+    state.vM2 = designOffsets[3] + newM2;
+
+    state.month = now.getMonth();
+    state.date = now.getDate();
+    state.day = now.getDay();
+
+    if (state.showSteps) {
+      state.steps = readSteps(now, hours, minutes);
     }
 
-    const container = application.first;
-    let content = container.first;
+    let dMax = state.useFahrenheit ? Math.idiv(tempMax * 9 + 160, 5) : tempMax;
+    let dMin = state.useFahrenheit ? Math.idiv(tempMin * 9 + 160, 5) : tempMin;
+    if (dMax < 0) dMax = 0; else if (dMax > 99) dMax = 99;
+    if (dMin < 0) dMin = 0; else if (dMin > 99) dMin = 99;
+    state.dMax = dMax;
+    state.dMin = dMin;
+    state.hour = hours;
+    syncTimeColors(hours);
+    weatherDirty = false;
 
-    // 1-4: Hours/Minutes
-    content = setVariant(content, designOffsets[0] + newH1);
-    content = setVariant(content, designOffsets[1] + newH2);
-    content = setVariant(content, designOffsets[2] + newM1);
-    content = setVariant(content, designOffsets[3] + newM2);
-
-    const date = now.getDate();
-    const s = settings.showSteps ? readSteps(now, hours, minutes) : lastSteps;
-    const needDate = (date !== lastDate);
-    const needSteps = settings.showSteps && (s !== lastSteps);
-
-    // 5-8: Month/Date/Day, 9: Step Label (static variant 0)
-    if (needDate) {
-      lastDate = date;
-      content = setVariant(content, now.getMonth());
-      content = setVariant(content, Math.idiv(date, 10));
-      content = setVariant(content, date % 10);
-      content = setVariant(content, now.getDay());
-      if (content) content = content.next; // skip 9: Step Label
-    } else if (needSteps || weatherDirty) {
-      for (let i = 0; i < 5 && content; i++) content = content.next;
-    }
-
-    // 10-14: Steps
-    if (needSteps) {
-      lastSteps = s;
-      content = setVariant(content, Math.idiv(s, 10000) % 10);
-      content = setVariant(content, Math.idiv(s, 1000) % 10);
-      content = setVariant(content, Math.idiv(s, 100) % 10);
-      content = setVariant(content, Math.idiv(s, 10) % 10);
-      content = setVariant(content, s % 10);
-    } else if (weatherDirty) {
-      for (let i = 0; i < 5 && content; i++) content = content.next;
-    }
-
-    // 15-19: Weather/Temp, 20: Hourly Weather Port (only on startup or weather update)
-    const hourChanged = (lastIndicatorHour !== hours);
-    if ((weatherDirty || hourChanged) && syncTimeColors(hours)) {
-      applyTimeColors(container, settings);
-    }
-
-    if (weatherDirty) {
-      weatherDirty = false;
-      let dMax = settings.useFahrenheit ? Math.idiv(tempMax * 9 + 160, 5) : tempMax;
-      let dMin = settings.useFahrenheit ? Math.idiv(tempMin * 9 + 160, 5) : tempMin;
-      if (dMax < 0) dMax = 0; else if (dMax > 99) dMax = 99;
-      if (dMin < 0) dMin = 0; else if (dMin > 99) dMin = 99;
-
-      content = setVariant(content, Math.idiv(dMax, 10));
-      content = setVariant(content, dMax % 10);
-      content = setVariant(content, 10);
-      content = setVariant(content, Math.idiv(dMin, 10));
-      content = setVariant(content, dMin % 10);
-
-      if (content) content.delegate("onWeatherChanged", weatherHourlyCodesStr);
-    }
-
-    // 21: indicator (setting coordinates always invalidates, so move only on hour change)
-    if (hourChanged && container.last) {
-      lastIndicatorHour = hours;
-      container.last.coordinates = { left: 5 + hours * 8, bottom: 28 };
+    if (application.first) {
+      application.first.invalidate();
     }
   }
 }
@@ -372,12 +297,8 @@ const FaceApplication = Application.template($ => ({
   ]
 }));
 
-const app = new FaceApplication(settings, { 
-  displayListLength: 1024, 
-  commandListLength: 560,
-  regionLength: 128,
-  touchCount: 0, 
-  pixels: screen.width * 2,
+const app = new FaceApplication(state, {
+  touchCount: 0,
 });
 
 export default app;

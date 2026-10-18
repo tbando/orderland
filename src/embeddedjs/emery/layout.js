@@ -3,99 +3,26 @@ const smallDigitsTexture = new Texture(`small_digits.png`);
 const monthsTexture = new Texture(`months.png`);
 const daysTexture = new Texture(`days.png`);
 const labelsTexture = new Texture(`labels.png`);
-const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6, height:4});
 
-let curBg, curHour, curMin, curText, curMax, curMinT;
-let bgSkin, hourSkin, minSkin, smallSkin, maxSkin, minTSkin, monthsSkin, daysSkin, labelsSkin;
-
-function toSkinColor(v) {
-  return typeof v === "number" ? rgb(((v >> 4) & 3) * 85, ((v >> 2) & 3) * 85, (v & 3) * 85) : v;
-}
-
-function syncSkins(s) {
-  const hc = s.activeHourColor || s.hourColor;
-  const mc = s.activeMinColor || s.minuteColor;
-  if (s.bgColor !== curBg) {
-    bgSkin = new Skin({ fill: toSkinColor(curBg = s.bgColor) });
-  }
-  if (hc !== curHour) {
-    hourSkin = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: toSkinColor(curHour = hc) });
-  }
-  if (mc !== curMin || (mc === hc && minSkin !== hourSkin)) {
-    curMin = mc;
-    minSkin = (mc === hc)
-      ? hourSkin
-      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: toSkinColor(mc) });
-  }
-  if (s.textColor !== curText) {
-    const tc = toSkinColor(curText = s.textColor);
-    smallSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: tc });
-    monthsSkin = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: tc });
-    daysSkin = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: tc });
-    labelsSkin = new Skin({ texture: labelsTexture, width:70, height:30, color: tc });
-  }
-  if (s.tempMaxColor !== curMax) {
-    maxSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: toSkinColor(curMax = s.tempMaxColor) });
-  }
-  if (s.tempMinColor !== curMinT) {
-    minTSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: toSkinColor(curMinT = s.tempMinColor) });
-  }
-}
-
-function setSkin(c, skin, vis) {
-  if (c.skin !== skin) c.skin = skin;
-  if (vis !== undefined && c.visible !== vis) c.visible = vis;
-  return c.next;
-}
-
-export function applyTimeColors(container, s) {
-  syncSkins(s);
-  let c = container.first;
-  c = setSkin(c, hourSkin);
-  c = setSkin(c, hourSkin);
-  c = setSkin(c, minSkin);
-  setSkin(c, minSkin);
-}
-
-export function applyTheme(container, s) {
-  syncSkins(s);
-  if (container.skin !== bgSkin) container.skin = bgSkin;
-  let c = container.first;
-  c = setSkin(c, hourSkin);
-  c = setSkin(c, hourSkin);
-  c = setSkin(c, minSkin);
-  c = setSkin(c, minSkin);
-  c = setSkin(c, monthsSkin);
-  c = setSkin(c, smallSkin);
-  c = setSkin(c, smallSkin);
-  c = setSkin(c, daysSkin);
-  c = setSkin(c, labelsSkin, s.showSteps);
-  for (let i = 0; i < 5; i++) c = setSkin(c, smallSkin, s.showSteps);
-  c = setSkin(c, maxSkin, s.showWeather);
-  c = setSkin(c, maxSkin, s.showWeather);
-  c = setSkin(c, smallSkin, s.showWeather);
-  c = setSkin(c, minTSkin, s.showWeather);
-  c = setSkin(c, minTSkin, s.showWeather);
-  for (; c; c = c.next) {
-    if (c.visible !== s.showWeather) c.visible = s.showWeather;
-  }
+export function toColor(v) {
+  return rgb(((v >> 4) & 3) * 85, ((v >> 2) & 3) * 85, (v & 3) * 85);
 }
 
 // --- Weather Dots Color & Pattern Config (Pebble 64-color palette) ---
-// Pebble 64-color hex values use 2 bits per RGB channel (00, 55, AA, FF).
-// Index 0 is off (black); 1..10 are palette colors.
+// Pebble 64-color values use 2 bits per RGB channel (00, 55, AA, FF).
+// Index 0 is off (0); 1..10 are 32-bit RGBA integers via rgb().
 export const WEATHER_COLORS = [
-  null,      //  0: Off (消灯)
-  "#FF5500", //  1: GColorOrange         (Clear sky)
-  "#FFFFFF", //  2: GColorWhite          (Clouds)
-  "#AAAAAA", //  3: GColorLightGray      (Fog)
-  "#AA55FF", //  4: GColorLavenderIndigo (Freezing / Rime)
-  "#00FFFF", //  5: GColorElectricBlue   (Drizzle)
-  "#0055FF", //  6: GColorBlueMoon       (Rain)
-  "#AAAAFF", //  7: GColorBabyBlueEyes   (Snow fall / grains)
-  "#AAFFFF", //  8: GColorCeleste        (Rain showers)
-  "#AAFFAA", //  9: GColorMintGreen      (Snow showers)
-  "#FFFF00", // 10: GColorYellow         (Thunderstorm)
+  0,                     //  0: Off (消灯)
+  rgb(0xFF, 0x55, 0x00), //  1: GColorOrange         (Clear sky)
+  rgb(0xFF, 0xFF, 0xFF), //  2: GColorWhite          (Clouds)
+  rgb(0xAA, 0xAA, 0xAA), //  3: GColorLightGray      (Fog)
+  rgb(0xAA, 0x55, 0xFF), //  4: GColorLavenderIndigo (Freezing / Rime)
+  rgb(0x00, 0xFF, 0xFF), //  5: GColorElectricBlue   (Drizzle)
+  rgb(0x00, 0x55, 0xFF), //  6: GColorBlueMoon       (Rain)
+  rgb(0xAA, 0xAA, 0xFF), //  7: GColorBabyBlueEyes   (Snow fall / grains)
+  rgb(0xAA, 0xFF, 0xFF), //  8: GColorCeleste        (Rain showers)
+  rgb(0xAA, 0xFF, 0xAA), //  9: GColorMintGreen      (Snow showers)
+  rgb(0xFF, 0xFF, 0x00), // 10: GColorYellow         (Thunderstorm)
 ];
 
 // 3-tier dot pattern per internal weather code (0..27).
@@ -136,65 +63,85 @@ export function getWeatherColor(code) {
   return WEATHER_COLORS[(WEATHER_DOT_PATTERNS[code] || 0) & 0xF];
 }
 
-class WeatherPortBehavior extends Behavior {
-  onWeatherChanged(port, codes) {
-    this.codes = codes;
-    port.invalidate();
+const INDICATOR_COLOR = rgb(0x00, 0xFF, 0x00); // GColorGreen
+
+class WatchfacePortBehavior extends Behavior {
+  onCreate(port, state) {
+    this.state = state;
   }
   onDraw(port) {
-    const codes = this.codes;
-    if (!codes) return;
-    for (let col = 0; col < 24; col++) {
-      const pattern = WEATHER_DOT_PATTERNS[codes.charCodeAt(col) - 65] || 0;
-      const x = col * 8;
-      for (let row = 0; row < 3; row++) {
-        const c = WEATHER_COLORS[(pattern >> (row * 4)) & 0xF];
-        if (c) port.fillColor(c, x, 16 - row * 8, 6, 6);
+    const s = this.state;
+    const tc = s.textColor;
+
+    // 1. Background
+    port.fillColor(s.bgColor, 0, 0, 200, 228);
+
+    // 2. Hours (H1, H2) & Minutes (M1, M2)
+    port.drawTexture(digitsTexture, s.activeHourColor, 0, 10, s.vH1 * 60, 0, 60, 90);
+    port.drawTexture(digitsTexture, s.activeHourColor, 60, 10, s.vH2 * 60, 0, 60, 90);
+    port.drawTexture(digitsTexture, s.activeMinColor, 80, 100, s.vM1 * 60, 0, 60, 90);
+    port.drawTexture(digitsTexture, s.activeMinColor, 140, 100, s.vM2 * 60, 0, 60, 90);
+
+    // 3. Month, Date, Day
+    port.drawTexture(monthsTexture, tc, 148, 10, s.month * 50, 0, 50, 30);
+    port.drawTexture(smallDigitsTexture, tc, 174, 35, Math.idiv(s.date, 10) * 12, 0, 12, 30);
+    port.drawTexture(smallDigitsTexture, tc, 186, 35, (s.date % 10) * 12, 0, 12, 30);
+    port.drawTexture(daysTexture, tc, 148, 60, s.day * 50, 0, 50, 30);
+
+    // 4. Steps
+    if (s.showSteps) {
+      port.drawTexture(labelsTexture, tc, 2, 105, 0, 0, 70, 30);
+      let rem = s.steps;
+      for (let i = 4; i >= 0; i--) {
+        port.drawTexture(smallDigitsTexture, tc, 2 + i * 14, 130, (rem % 10) * 12, 0, 12, 30);
+        rem = Math.idiv(rem, 10);
+      }
+    }
+
+    // 5. Weather (Max/Min Temp + 24h Weather Dots + Current Hour Indicator)
+    if (s.showWeather) {
+      const dMax = s.dMax;
+      const dMin = s.dMin;
+      const maxC = s.tempMaxColor;
+      const minC = s.tempMinColor;
+      port.drawTexture(smallDigitsTexture, maxC, 2, 164, Math.idiv(dMax, 10) * 12, 0, 12, 30);
+      port.drawTexture(smallDigitsTexture, maxC, 16, 164, (dMax % 10) * 12, 0, 12, 30);
+      port.drawTexture(smallDigitsTexture, tc, 30, 164, 120, 0, 12, 30);
+      port.drawTexture(smallDigitsTexture, minC, 44, 164, Math.idiv(dMin, 10) * 12, 0, 12, 30);
+      port.drawTexture(smallDigitsTexture, minC, 58, 164, (dMin % 10) * 12, 0, 12, 30);
+
+      const codes = s.codes;
+      const hour = s.hour;
+      if (hour >= 0) {
+        const hx = 5 + hour * 8;
+        // Top downward pointer (▼)
+        port.fillColor(INDICATOR_COLOR, hx, 194, 6, 2);
+        port.fillColor(INDICATOR_COLOR, hx + 1, 196, 4, 1);
+        port.fillColor(INDICATOR_COLOR, hx + 2, 197, 2, 1);
+        // Bottom underline bar (━)
+        port.fillColor(INDICATOR_COLOR, hx, 224, 6, 2);
+      }
+      for (let col = 0; col < 24; col++) {
+        const pattern = codes ? (WEATHER_DOT_PATTERNS[codes.charCodeAt(col) - 65] || 0) : 0;
+        const x = 5 + col * 8;
+        const isCur = (col === hour);
+        for (let row = 0; row < 3; row++) {
+          const c = WEATHER_COLORS[(pattern >> (row * 4)) & 0xF];
+          const y = 216 - row * 8;
+          if (c) {
+            port.fillColor(c, x, y, 6, 6);
+          } else if (isCur) {
+            port.fillColor(INDICATOR_COLOR, x + 2, y + 2, 2, 2);
+          }
+        }
       }
     }
   }
 }
 
-const Layout = Container.template($ => {
-  syncSkins($);
-  return {
-    left:0, right:0, top:0, bottom:0, skin:bgSkin,
-    contents: [
-      // hours
-      Content($, { left:0, top:10, skin:hourSkin }),
-      Content($, { left:60, top:10, skin:hourSkin }),
-      // minutes
-      Content($, { left:80, top:100, skin:minSkin }),
-      Content($, { left:140, top:100, skin:minSkin }),
-      // month
-      Content($, { left:150-2, top:10, skin:monthsSkin }),
-      // date
-      Content($, { left:176-2, top:35, skin:smallSkin }),
-      Content($, { left:188-2, top:35, skin:smallSkin }),
-      // day
-      Content($, { left:150-2, top:60, skin:daysSkin }),
-      // step label
-      Content($, { left:0+2, top:105, skin:labelsSkin, visible:$.showSteps }),
-      // step
-      Content($, { left:14*0+2, top:130, skin:smallSkin, visible:$.showSteps }),
-      Content($, { left:14*1+2, top:130, skin:smallSkin, visible:$.showSteps }),
-      Content($, { left:14*2+2, top:130, skin:smallSkin, visible:$.showSteps }),
-      Content($, { left:14*3+2, top:130, skin:smallSkin, visible:$.showSteps }),
-      Content($, { left:14*4+2, top:130, skin:smallSkin, visible:$.showSteps }),
-
-      // temp max
-      Content($, { left:14*0+2, bottom:10+24, skin:maxSkin, visible:$.showWeather }),
-      Content($, { left:14*1+2, bottom:10+24, skin:maxSkin, visible:$.showWeather }),
-      Content($, { left:14*2+2, bottom:10+24, skin:smallSkin, visible:$.showWeather }),
-      Content($, { left:14*3+2, bottom:10+24, skin:minTSkin, visible:$.showWeather }),
-      Content($, { left:14*4+2, bottom:10+24, skin:minTSkin, visible:$.showWeather }),
-      // weather dots (custom drawn via Port)
-      Port($, { left:5, bottom:5, width:190, height:22, visible:$.showWeather, Behavior:WeatherPortBehavior }),
-      
-      // indicator
-      Content($, { skin:indicatorSkin, visible:$.showWeather }),
-    ]
-  };
-});
+const Layout = Port.template($ => ({
+  left: 0, right: 0, top: 0, bottom: 0,
+  Behavior: WatchfacePortBehavior,
+}));
 
 export default Layout;

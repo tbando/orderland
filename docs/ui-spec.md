@@ -18,42 +18,33 @@
 │               │        ││        │           │  分: 60×90 ×2 (left:80/140, top:100)
 │               └────────┘└────────┘           │
 │ 29/21                                        │  気温 5 マス: left:2+14n, bottom:34
-│            ▼ (インジケータ)                    │  indicator: left:5+時×8, bottom:28
-│ ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪ (24 ドット列)        │  ドット: left:5+n×8, bottom:5
+│            ▼ (上ポインタ)                    │  天気&インジケータ Port: left:5, bottom:2 (190×32)
+│ ▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪▪ (24 ドット列+ガイド)│  └ 上ポインタ (y:0..3) / ドット列 (y:5..26)
+│            ━ (下アンダーバー)                │  └ 下アンダーバー (y:30..31)
 └──────────────────────────────────────────────┘
 (0,228)                                    (200,228)
 ```
 
 時 (左上) と分 (右下) を対角に配置した非対称レイアウトが特徴。
 
-## 表示要素と variant の対応
+## 単一 `Port` による一括描画アーキテクチャ
 
-`onClockChanged` はコンテナの子 Content を先頭から順に辿り、variant を設定していく。
-**layout.js 内の Content の並び順と main.js の更新順は 1:1 で対応しており、順序を崩すと表示が壊れる。**
+PebbleOS 上の Piu (`modules/piu/Pebble/piuView.c`) は `layer_mark_dirty` 時に常に画面全体 (`200×228`) を再描画する仕様であり、多数の `Content` (1 個あたり 88 bytes の XS chunk + 2 slots) や `Skin` (1 個あたり 48 bytes の XS chunk + 2 slots) を保持すると、固定サイズである **8KB の XS chunk heap** および **512 slots の XS slot heap** を圧迫する。
 
-### 差分更新によるバッテリー最適化
+そのため、画面全体を **単一のフルスクリーン `Port` (`WatchfacePortBehavior`)** として構成し、`onDraw(port)` 内で `port.fillColor` と `port.drawTexture` により全要素を直接描画する。
 
-Piu は `content.variant` / `content.coordinates` への代入を、値が同じでも無条件に
-invalidate + reflow するため、素朴に毎分全要素へ代入すると全 43 コンテンツが
-再描画対象になる。これを避けるため:
-
-- variant の更新は `setVariant()` ヘルパー経由で行い、**現在値と異なるときだけ代入**する
-- さらに日付 (`lastDate`)・歩数 (`lastSteps`)・天気 (`weatherDirty`) のグループ単位で変化判定を行い、**変化していないグループは Content の走査・variant 比較自体をスキップ**する (通常の毎分 tick では時刻 4 桁と変化時の歩数 5 桁のみを処理し、後半の気温 5 個と天気 `Port` は起動時と天気更新時しか更新しない)
-- インジケータ (`container.last`) の `coordinates` は `lastIndicatorHour` と比較し、**時が変わったときだけ**移動する
-
-| # | 要素 | Skin / 型 | variant / 更新方法 |
+| 要素 | 描画 API / テクスチャ | 座標 (`x, y, w, h`) | 切り出し位置 (`sx`) / 色 |
 |---|---|---|---|
-| 1–4 | 時刻 H1 H2 M1 M2 | `digitsSkin` | `designOffsets[i] + 数字` (後述) |
-| 5 | 月 | `monthsSkin` | `getMonth()` (0–11) |
-| 6–7 | 日 (十の位, 一の位) | `smallDigitsSkin` | 各桁の数字 |
-| 8 | 曜日 | `daysSkin` | `getDay()` (0=日曜) |
-| 9 | STEP ラベル | `labelsSkin` | 0 固定 |
-| 10–14 | 歩数 5 桁 | `smallDigitsSkin` | 各桁の数字 (ゼロ埋め表示、上限 99999) |
-| 15–16 | 最高気温 2 桁 | `smallRedDigitsSkin` (#FF5500) | 各桁の数字 |
-| 17 | 区切り記号 | `smallDigitsSkin` | 10 固定 (small_digits.png の 11 マス目) |
-| 18–19 | 最低気温 2 桁 | `smallBlueDigitsSkin` (#55AAFF) | 各桁の数字 |
-| 20 | 24 時間天気ドット | `Port` (`WeatherPortBehavior`) | `delegate("onWeatherChanged", WEATHER_CODES)` で `port.invalidate()` → `onDraw` で 24 列を描画 |
-| 21 | 時刻インジケータ | `indicatorSkin` | — (coordinates を `left: 5 + hours*8` に移動) |
+| 背景 | `port.fillColor` | `0, 0, 200, 228` | `state.bgColor` |
+| 時 (H1, H2) | `digitsTexture` | `0/60, 10, 60, 90` | `vH1*60`, `vH2*60` / `state.activeHourColor` |
+| 分 (M1, M2) | `digitsTexture` | `80/140, 100, 60, 90` | `vM1*60`, `vM2*60` / `state.activeMinColor` |
+| 月 | `monthsTexture` | `148, 10, 50, 30` | `month*50` / `state.textColor` |
+| 日 (2 桁) | `smallDigitsTexture` | `174/186, 35, 12, 30` | `digit*12` / `state.textColor` |
+| 曜日 | `daysTexture` | `148, 60, 50, 30` | `day*50` / `state.textColor` |
+| STEP ラベル | `labelsTexture` | `2, 105, 70, 30` | `0` / `state.textColor` (`showSteps` 時) |
+| 歩数 (5 桁) | `smallDigitsTexture` | `2+14i, 130, 12, 30` | `digit*12` / `state.textColor` (`showSteps` 時) |
+| 最高/最低気温 | `smallDigitsTexture` | `2+14i, 164, 12, 30` | 最高2桁 (`tempMaxColor`) + `/` (`120`, `textColor`) + 最低2桁 (`tempMinColor`) |
+| 24 時間天気ドット＆インジケータ | `port.fillColor` | `x=5+col*8, y=194..226` | 24 列ドット (`y=200,208,216`) + 現在時インジケータ (`▼` `y=194..197` + ガイドドット + `━` `y=224..225`) |
 
 ## 数字デザインのランダム選択 (本プロジェクトの中核仕様)
 
@@ -70,7 +61,7 @@ variant オフセット (0 / 10 / 20 / 30) を保持する。
 3. **固定セット (`DigitStyle = 2〜5`)**: 4 桁すべてを指定セット (セット 1〜4、オフセット `0`/`10`/`20`/`30`) に固定
 4. **同一数字の重複禁止 (ランダム時)**: 4 桁の中に同じ数字が複数ある場合 (例: 11:15 の「1」)、
    それらが同じセットになることは禁止 (まったく同じ絵が並ぶのを防ぐ)。
-   数字が異なる桁同士なら同じセットでもよい
+   数字が異なる桁同士なら同じセットでもよい (ビットマスク `usedMask` で判定し、毎分のオブジェクト生成を行わない)
 5. 使用可能なセットが尽きた場合は先頭の未使用オフセット、それもなければ 0 にフォールバック
 
 ### 再抽選のタイミング
@@ -82,20 +73,10 @@ variant オフセット (0 / 10 / 20 / 30) を保持する。
 | 毎分 | M2 (分の一の位) |
 | 分の一の位が 0 になったとき (10 分ごと) | M1 も |
 | 毎時 0 分 | H2 も |
-| 毎時 0 分 かつ 時の一の位が 0 (10 時, 20 時, 0 時) | H1 も |
+| 毎時 0 分 かつ 時の一の位が 0 (または 12h 表示で 1 時) | H1 も |
 
 再抽選時は対象桁のオフセットを一旦 `-1` にリセットしてから順に選び直すことで、
-重複禁止ルールを対象桁同士にも適用している。
-
-### 永続化と起動時検証
-
-- 選択結果は `localStorage` の `DESIGN_OFFSETS` にカンマ区切りで保存され、
-  watchface 再起動をまたいでもデザインが維持される。再抽選の結果が前回保存値と
-  同一文字列になった場合は書き込みをスキップする (フラッシュ書き込み削減)
-- 起動時に検証し、以下のいずれかに該当したら 4 桁全部を抽選し直す:
-  - 要素数が 4 でない
-  - 値が 0〜30 の範囲外、または 10 の倍数でない
-  - 同じ数字の桁に同じオフセットが割り当てられている
+重複禁止ルールを対象桁同士にも適用している。`designOffsets` は RAM 上で保持し、毎分の `localStorage` (SPI フラッシュ `SettingsFile`) への書き込みは行わない。
 
 ### セット数の変更
 
@@ -105,11 +86,13 @@ variant オフセット (0 / 10 / 20 / 30) を保持する。
 
 ## 24 時間天気ドットとインジケータ
 
-- 画面最下部に `Port` (`left: 5, bottom: 5, width: 190, height: 22`) を 1 つ配置し、24 時間分のドット列を 8 px ピッチ (`x = col*8`) でカスタム描画 (`port.fillColor`) する
-- 各列は縦に 3 マス (6×6 px、隙間 2 px) 並んでおり、**下段 1 マス = 弱、2 マス = 中、
+- 画面最下部に `Port` (`left: 5, bottom: 2, width: 190, height: 32`) を 1 つ配置し、24 時間分のドット列と現在時刻インジケータを 8 px ピッチ (`x = col*8`) でカスタム描画 (`port.fillColor`) する
+- 各列は縦に 3 マス (`y = 5, 13, 21`、各 6×6 px、隙間 2 px) 並んでおり、**下段 1 マス = 弱、2 マス = 中、
   3 マス = 強**のように点灯数と色で天気と強度を表す (色・パターン定義は `layout.js` の `WEATHER_COLORS` / `WEATHER_DOT_PATTERNS`、詳細は [assets.md](./assets.md))
-- インジケータ (6×4 px の矢印) が `left: 5 + hours*8` に移動し、ドット列の真上から
-  「現在の時刻」の列を指す
+- 現在時刻の列 (`hx = hours * 8`) には、視認性を高めるため **3 要素のインジケータ** (`INDICATOR_COLOR = "#00FF00"`) を描画する:
+  1. **上部ポインタ (`▼`)**: `y = 0..3` に 6×2 px + 4×1 px + 2×1 px の下向き矢印
+  2. **消灯マスのガイドドット (`2×2 px`)**: 現在時刻の列で消灯している段 (快晴時の上・中段や天気未取得時の全 3 段) の中央に `2×2 px` の小ドットを描画し、上部の `▼` から視線が迷わず真下の列を辿れるようにする
+  3. **下部アンダーバー (`━`)**: `y = 30..31` に 6×2 px の水平バーを配置し、該当列を上下から挟み込む
 
 ## 既知の制約・課題
 

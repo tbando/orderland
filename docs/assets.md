@@ -15,11 +15,11 @@ Moddable の Skin における `variants` は「variant 1 つ分の横方向ピ�
 | `days.png` | 350×30 | 50×30 | 曜日名 7 マス (variant = `getDay()`、0 = 日曜) | alpha |
 | `labels.png` | 70×30 | 70×30 | "STEP" ラベル 1 マス | alpha |
 | `weather_dots.png` | 144×22 | 6×22 | 旧天気ドット画像。**マニフェスト未登録の未使用ファイル** (現在は `layout.js` の `Port` で直接描画) | — |
-| `indicator.png` | 6×4 | 6×4 | 現在時刻インジケータ | フルカラー |
+| `indicator.png` | 6×4 | 6×4 | 旧現在時刻インジケータ画像。**マニフェスト未登録の未使用ファイル** (現在は `layout.js` の `Port` で直接描画) | — |
 | `large_digits.png` | 3000×90 | 60×90 | 5 セット分の大型数字。**マニフェスト未登録の未使用ファイル** (メモリ制約で 4 セット運用のため) | — |
 
 alpha リソースはグレースケール + アルファとしてビルドされ、Skin の `color` プロパティで
-実行時に着色される。`indicator.png` はフルカラーのまま使う。
+実行時に着色される。
 
 ## 24 時間天気ドットの配色設定 (`src/embeddedjs/emery/layout.js`)
 
