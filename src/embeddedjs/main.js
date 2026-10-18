@@ -2,9 +2,12 @@ import Layout, { applyTheme, applyTimeColors, getWeatherColor } from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V113_COMPACT_CFG_MEMFIX ===");
+console.log("=== BUILD MARKER: V114_CHUNK_FREED ===");
 
-const DEFAULT_CFG = "#000000,#FFFFFF,#FFFFFF,#FFFFFF,#FF5500,#55AAFF,0,0,1,0,1,1";
+// 12-char ASCII config: each char is String.fromCharCode(65 + val)
+// [0..5]: 6-bit colors (bg=0, hour=63, min=63, text=63, max=52, minT=27)
+// [6..11]: weatherColorMode=0, fahrenheit=0, 24h=1, style=0, steps=1, weather=1
+const DEFAULT_CFG = "A~~~u\\AABABB";
 let settings = {};
 let isStartup = true;
 let lastMinutes = -1;
@@ -15,10 +18,9 @@ let lastIndicatorHour = -1;
 let designOffsets = [];
 
 function parseCfg(str) {
-  let p = (str || DEFAULT_CFG).split(",");
-  if (p.length !== 12) p = DEFAULT_CFG.split(",");
-  const newStyle = parseInt(p[9], 10) || 0;
-  const new24h = (p[8] === "1");
+  const s = (str && str.length === 12) ? str : DEFAULT_CFG;
+  const newStyle = s.charCodeAt(9) - 65;
+  const new24h = (s.charCodeAt(8) === 66);
   if (settings.digitStyle !== undefined && settings.digitStyle !== newStyle) {
     designOffsets = [];
     isStartup = true;
@@ -26,18 +28,18 @@ function parseCfg(str) {
   if (settings.use24Hour !== undefined && settings.use24Hour !== new24h) {
     isStartup = true;
   }
-  settings.bgColor = p[0];
-  settings.hourColor = p[1];
-  settings.minuteColor = p[2];
-  settings.textColor = p[3];
-  settings.tempMaxColor = p[4];
-  settings.tempMinColor = p[5];
-  settings.weatherColorMode = parseInt(p[6], 10) || 0;
-  settings.useFahrenheit = (p[7] === "1");
+  settings.bgColor = s.charCodeAt(0) - 65;
+  settings.hourColor = s.charCodeAt(1) - 65;
+  settings.minuteColor = s.charCodeAt(2) - 65;
+  settings.textColor = s.charCodeAt(3) - 65;
+  settings.tempMaxColor = s.charCodeAt(4) - 65;
+  settings.tempMinColor = s.charCodeAt(5) - 65;
+  settings.weatherColorMode = s.charCodeAt(6) - 65;
+  settings.useFahrenheit = (s.charCodeAt(7) === 66);
   settings.use24Hour = new24h;
   settings.digitStyle = newStyle;
-  settings.showSteps = (p[10] === "1");
-  settings.showWeather = (p[11] === "1");
+  settings.showSteps = (s.charCodeAt(10) === 66);
+  settings.showWeather = (s.charCodeAt(11) === 66);
 }
 
 parseCfg(localStorage.getItem("SETTINGS"));
@@ -371,9 +373,11 @@ const FaceApplication = Application.template($ => ({
 }));
 
 const app = new FaceApplication(settings, { 
-  displayListLength: 2048, 
+  displayListLength: 1024, 
+  commandListLength: 560,
+  regionLength: 128,
   touchCount: 0, 
-  pixels: screen.width * 4,
+  pixels: screen.width * 2,
 });
 
 export default app;

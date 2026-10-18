@@ -11,7 +11,7 @@
 | `TEMP_MAX` | Phone → Watch JS | int | 当日の最高気温 (℃、四捨五入) |
 | `TEMP_MIN` | Phone → Watch JS | int | 当日の最低気温 (℃、四捨五入) |
 | `WEATHER_CODES` | Phone → Watch JS | string (24 文字) | 1 時間ごとの天気コード。後述のエンコード方式 |
-| `CFG` | Phone (Clay) → Watch JS | string (カンマ区切り 12 要素) | Clay 設定値 (`bgColor,hourColor,minuteColor,textColor,tempMaxColor,tempMinColor,weatherColorMode,useFahrenheit,use24Hour,digitStyle,showSteps,showWeather`)。Watch 側の XS チャンクヒープ節約のため Phone 側で 1 つの文字列にパックして送信 |
+| `CFG` | Phone (Clay) → Watch JS | string (12 文字) | Clay 設定値 (`WEATHER_CODES` と同じく `String.fromCharCode(65 + val)` でエンコードした 12 文字: 6bit 色×6 + 設定値×6) |
 
 歩数は AppMessage を経由しない (後述のネイティブ Health API で取得)。
 
@@ -119,4 +119,4 @@ REQ_WEATHER 受信
 | `TEMP_MAX` / `TEMP_MIN` | 最高・最低気温 (摂氏 ℃ で保持し、華氏設定時は描画時に換算) |
 | `WEATHER_CODES` | 24 文字の天気コード文字列 |
 | `DESIGN_OFFSETS` | 時刻 4 桁のデザインセット選択状態 (詳細は [ui-spec.md](./ui-spec.md)) |
-| `SETTINGS` | ユーザー設定の 12 要素 CSV 文字列 (`bgColor,hourColor,minuteColor,textColor,tempMaxColor,tempMinColor,weatherColorMode,useFahrenheit,use24Hour,digitStyle,showSteps,showWeather`) |
+| `SETTINGS` | ユーザー設定の 12 文字エンコード文字列 (`CFG` と同一形式) |

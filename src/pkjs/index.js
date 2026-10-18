@@ -8,16 +8,18 @@ function getVal(raw, key, def) {
   return (v !== undefined && v !== null && v !== '') ? v : def;
 }
 
-function toHex(v, def) {
+function toColor6(v, def) {
+  var n = def;
   if (typeof v === 'number') {
-    return '#' + ((v & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
+    n = v;
+  } else if (typeof v === 'string' && v.length > 0) {
+    var parsed = parseInt(v[0] === '#' ? v.slice(1) : v, 16);
+    if (!isNaN(parsed)) n = parsed;
   }
-  if (typeof v === 'string' && v.length > 0) {
-    if (v[0] === '#') return v;
-    var n = parseInt(v, 16);
-    if (!isNaN(n)) return '#' + ((n & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
-  }
-  return def;
+  var r = (((n >> 16) & 0xFF) / 85 + 0.5) | 0;
+  var g = (((n >> 8) & 0xFF) / 85 + 0.5) | 0;
+  var b = ((n & 0xFF) / 85 + 0.5) | 0;
+  return (r << 4) | (g << 2) | b;
 }
 
 Pebble.addEventListener('showConfiguration', function() {
@@ -27,20 +29,24 @@ Pebble.addEventListener('showConfiguration', function() {
 Pebble.addEventListener('webviewclosed', function(e) {
   if (!e || !e.response) return;
   var raw = clay.getSettings(e.response, false);
-  var cfg = [
-    toHex(getVal(raw, 'BackgroundColor'), '#000000'),
-    toHex(getVal(raw, 'HourColor'), '#FFFFFF'),
-    toHex(getVal(raw, 'MinuteColor'), '#FFFFFF'),
-    toHex(getVal(raw, 'TextColor'), '#FFFFFF'),
-    toHex(getVal(raw, 'TempMaxColor'), '#FF5500'),
-    toHex(getVal(raw, 'TempMinColor'), '#55AAFF'),
+  var codes = [
+    toColor6(getVal(raw, 'BackgroundColor'), 0x000000),
+    toColor6(getVal(raw, 'HourColor'), 0xFFFFFF),
+    toColor6(getVal(raw, 'MinuteColor'), 0xFFFFFF),
+    toColor6(getVal(raw, 'TextColor'), 0xFFFFFF),
+    toColor6(getVal(raw, 'TempMaxColor'), 0xFF5500),
+    toColor6(getVal(raw, 'TempMinColor'), 0x55AAFF),
     parseInt(getVal(raw, 'WeatherColorMode', 0), 10) || 0,
     getVal(raw, 'TemperatureUnit', false) ? 1 : 0,
     getVal(raw, 'HourFormat', true) ? 1 : 0,
     parseInt(getVal(raw, 'DigitStyle', 0), 10) || 0,
     getVal(raw, 'ShowSteps', true) ? 1 : 0,
     getVal(raw, 'ShowWeather', true) ? 1 : 0
-  ].join(',');
+  ];
+  var cfg = '';
+  for (var i = 0; i < codes.length; i++) {
+    cfg += String.fromCharCode(65 + (codes[i] & 0x3F));
+  }
 
   Pebble.sendAppMessage({ CFG: cfg },
     function() { console.log('pkjs: Sent config data to Pebble.'); },

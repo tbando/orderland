@@ -3,16 +3,6 @@
 		"icon": "./icon.png",
 		"watchface": true
 	},
-	"creation": {
-		"static": 32768,
-		"chunk": {
-			"initial": 14336
-		},
-		"heap": {
-			"initial": 768
-		},
-		"stack": 384
-	},
 	"modules": {
 		"*": "./main"
 	},

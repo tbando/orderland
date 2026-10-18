@@ -8,33 +8,37 @@ const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6,
 let curBg, curHour, curMin, curText, curMax, curMinT;
 let bgSkin, hourSkin, minSkin, smallSkin, maxSkin, minTSkin, monthsSkin, daysSkin, labelsSkin;
 
+function toSkinColor(v) {
+  return typeof v === "number" ? rgb(((v >> 4) & 3) * 85, ((v >> 2) & 3) * 85, (v & 3) * 85) : v;
+}
+
 function syncSkins(s) {
   const hc = s.activeHourColor || s.hourColor;
   const mc = s.activeMinColor || s.minuteColor;
   if (s.bgColor !== curBg) {
-    bgSkin = new Skin({ fill: (curBg = s.bgColor) });
+    bgSkin = new Skin({ fill: toSkinColor(curBg = s.bgColor) });
   }
   if (hc !== curHour) {
-    hourSkin = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: (curHour = hc) });
+    hourSkin = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: toSkinColor(curHour = hc) });
   }
   if (mc !== curMin || (mc === hc && minSkin !== hourSkin)) {
     curMin = mc;
     minSkin = (mc === hc)
       ? hourSkin
-      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc });
+      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: toSkinColor(mc) });
   }
   if (s.textColor !== curText) {
-    curText = s.textColor;
-    smallSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: curText });
-    monthsSkin = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: curText });
-    daysSkin = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: curText });
-    labelsSkin = new Skin({ texture: labelsTexture, width:70, height:30, color: curText });
+    const tc = toSkinColor(curText = s.textColor);
+    smallSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: tc });
+    monthsSkin = new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: tc });
+    daysSkin = new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: tc });
+    labelsSkin = new Skin({ texture: labelsTexture, width:70, height:30, color: tc });
   }
   if (s.tempMaxColor !== curMax) {
-    maxSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: (curMax = s.tempMaxColor) });
+    maxSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: toSkinColor(curMax = s.tempMaxColor) });
   }
   if (s.tempMinColor !== curMinT) {
-    minTSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: (curMinT = s.tempMinColor) });
+    minTSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: toSkinColor(curMinT = s.tempMinColor) });
   }
 }
 
