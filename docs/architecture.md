@@ -30,9 +30,10 @@ Orderland は 3 つの実行環境にまたがるハイブリッド構成です�
 |---|---|---|
 | C | `src/c/mdbl.c` | エントリポイント。Window 生成 → weather request 起動 → Alloy ランタイム起動 |
 | C | `src/c/modules/weather_request.{c,h}` | 天気リクエスト (`REQ_WEATHER`) の定期トリガー |
-| Phone JS | `src/pkjs/index.js` | 天気取得 (Open-Meteo)、キャッシュ管理 |
-| Watch JS | `src/embeddedjs/main.js` | アプリ本体。Message 受信、時刻・health イベント処理、variant 更新 |
-| Watch JS | `src/embeddedjs/emery/layout.js` | emery 専用の Skin / レイアウト定義 |
+| Phone JS | `src/pkjs/index.js` | Clay 初期化、天気取得 (Open-Meteo)、キャッシュ管理 |
+| Phone JS | `src/pkjs/config.js` | `@rebble/clay` による設定画面の定義 (色・12h/24h・摂氏/華氏・数字スタイル・表示切替) |
+| Watch JS | `src/embeddedjs/main.js` | アプリ本体。Message 受信 (天気・Clay 設定)、時刻・health イベント処理、variant 更新 |
+| Watch JS | `src/embeddedjs/emery/layout.js` | emery 専用の Skin / レイアウト定義・動的テーマ適用 (`applyTheme`) |
 | Watch JS | `src/embeddedjs/manifest.json` | Moddable マニフェスト。emery 向けモジュール・リソース定義 |
 
 ### 歩数はネイティブ Health API で取得する

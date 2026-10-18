@@ -1,15 +1,55 @@
-const backgroundSkin = new Skin({ fill:"#000000" });
-
-export const digitsSkin = new Skin({ texture: new Texture(`large_digits_40.png`), width:60, height:90, variants:60, color:"#FFFFFF" });
-
+const digitsTexture = new Texture(`large_digits_40.png`);
 const smallDigitsTexture = new Texture(`small_digits.png`);
-export const smallDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#FFFFFF" });
-export const smallRedDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#FF5500" });
-export const smallBlueDigitsSkin = new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color:"#55AAFF" });
-export const monthsSkin = new Skin({ texture: new Texture(`months.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
-export const daysSkin = new Skin({ texture: new Texture(`days.png`), width:50, height:30, variants:50, color:"#FFFFFF" });
-export const labelsSkin = new Skin({ texture: new Texture(`labels.png`), width:70, height:30, color:"#FFFFFF" });
+const monthsTexture = new Texture(`months.png`);
+const daysTexture = new Texture(`days.png`);
+const labelsTexture = new Texture(`labels.png`);
 const indicatorSkin = new Skin({ texture: new Texture(`indicator.png`), width:6, height:4});
+
+function createSkins(s) {
+  const hc = s.activeHourColor || s.hourColor;
+  const mc = s.activeMinColor || s.minuteColor;
+  const hour = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: hc });
+  return {
+    bg: new Skin({ fill: s.bgColor }),
+    hour,
+    min: mc === hc
+      ? hour
+      : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc }),
+    small: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.textColor }),
+    tempMax: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.tempMaxColor }),
+    tempMin: new Skin({ texture: smallDigitsTexture, width:12, height:30, variants:12, color: s.tempMinColor }),
+    months: new Skin({ texture: monthsTexture, width:50, height:30, variants:50, color: s.textColor }),
+    days: new Skin({ texture: daysTexture, width:50, height:30, variants:50, color: s.textColor }),
+    labels: new Skin({ texture: labelsTexture, width:70, height:30, color: s.textColor }),
+  };
+}
+
+export function applyTimeColors(container, hc, mc) {
+  const hour = new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: hc });
+  const min = mc === hc
+    ? hour
+    : new Skin({ texture: digitsTexture, width:60, height:90, variants:60, color: mc });
+  let c = container.first;
+  for (let i = 0; i < 2; i++, c = c.next) c.skin = hour;
+  for (let i = 0; i < 2; i++, c = c.next) c.skin = min;
+}
+
+export function applyTheme(container, s) {
+  const skins = createSkins(s);
+  container.skin = skins.bg;
+  let c = container.first;
+  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.hour;
+  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.min;
+  c.skin = skins.months; c = c.next;
+  for (let i = 0; i < 2; i++, c = c.next) c.skin = skins.small;
+  c.skin = skins.days; c = c.next;
+  c.skin = skins.labels; c.visible = s.showSteps; c = c.next;
+  for (let i = 0; i < 5; i++, c = c.next) { c.skin = skins.small; c.visible = s.showSteps; }
+  for (let i = 0; i < 2; i++, c = c.next) { c.skin = skins.tempMax; c.visible = s.showWeather; }
+  c.skin = skins.small; c.visible = s.showWeather; c = c.next;
+  for (let i = 0; i < 2; i++, c = c.next) { c.skin = skins.tempMin; c.visible = s.showWeather; }
+  for (; c; c = c.next) c.visible = s.showWeather;
+}
 
 // --- Weather Dots Color & Pattern Config (Pebble 64-color palette) ---
 // Pebble 64-color hex values use 2 bits per RGB channel (00, 55, AA, FF).
@@ -62,6 +102,10 @@ export const WEATHER_DOT_PATTERNS = [
   0x4AA, // 27 (WMO 99): Thunderstorm with heavy hail    — Bot/Mid: Yellow, Top: LavenderIndigo
 ];
 
+export function getWeatherColor(code) {
+  return WEATHER_COLORS[(WEATHER_DOT_PATTERNS[code] || 0) & 0xF];
+}
+
 class WeatherPortBehavior extends Behavior {
   onWeatherChanged(port, codes) {
     this.codes = codes;
@@ -81,43 +125,46 @@ class WeatherPortBehavior extends Behavior {
   }
 }
 
-const Layout = Container.template($ => ({
-	left:0, right:0, top:0, bottom:0, skin:backgroundSkin,
-	contents: [
-    // hours
-    Content($, { left:0, top:10, skin:digitsSkin }),
-    Content($, { left:60, top:10, skin:digitsSkin }),
-    // minutes
-    Content($, { left:80, top:100, skin:digitsSkin }),
-    Content($, { left:140, top:100, skin:digitsSkin }),
-    // month
-    Content($, { left:150-2, top:10, skin:monthsSkin }),
-    // date
-    Content($, { left:176-2, top:35, skin:smallDigitsSkin }),
-    Content($, { left:188-2, top:35, skin:smallDigitsSkin }),
-    // day
-    Content($, { left:150-2, top:60, skin:daysSkin }),
-    // step label
-    Content($, { left:0+2, top:105, skin:labelsSkin }),
-    // step
-    Content($, { left:14*0+2, top:130, skin:smallDigitsSkin }),
-    Content($, { left:14*1+2, top:130, skin:smallDigitsSkin }),
-    Content($, { left:14*2+2, top:130, skin:smallDigitsSkin }),
-    Content($, { left:14*3+2, top:130, skin:smallDigitsSkin }),
-    Content($, { left:14*4+2, top:130, skin:smallDigitsSkin }),
+const Layout = Container.template($ => {
+  const skins = createSkins($);
+  return {
+    left:0, right:0, top:0, bottom:0, skin:skins.bg,
+    contents: [
+      // hours
+      Content($, { left:0, top:10, skin:skins.hour }),
+      Content($, { left:60, top:10, skin:skins.hour }),
+      // minutes
+      Content($, { left:80, top:100, skin:skins.min }),
+      Content($, { left:140, top:100, skin:skins.min }),
+      // month
+      Content($, { left:150-2, top:10, skin:skins.months }),
+      // date
+      Content($, { left:176-2, top:35, skin:skins.small }),
+      Content($, { left:188-2, top:35, skin:skins.small }),
+      // day
+      Content($, { left:150-2, top:60, skin:skins.days }),
+      // step label
+      Content($, { left:0+2, top:105, skin:skins.labels, visible:$.showSteps }),
+      // step
+      Content($, { left:14*0+2, top:130, skin:skins.small, visible:$.showSteps }),
+      Content($, { left:14*1+2, top:130, skin:skins.small, visible:$.showSteps }),
+      Content($, { left:14*2+2, top:130, skin:skins.small, visible:$.showSteps }),
+      Content($, { left:14*3+2, top:130, skin:skins.small, visible:$.showSteps }),
+      Content($, { left:14*4+2, top:130, skin:skins.small, visible:$.showSteps }),
 
-    // temp max
-    Content($, { left:14*0+2, bottom:10+24, skin:smallRedDigitsSkin }),
-    Content($, { left:14*1+2, bottom:10+24, skin:smallRedDigitsSkin }),
-    Content($, { left:14*2+2, bottom:10+24, skin:smallDigitsSkin }),
-    Content($, { left:14*3+2, bottom:10+24, skin:smallBlueDigitsSkin }),
-    Content($, { left:14*4+2, bottom:10+24, skin:smallBlueDigitsSkin }),
-    // weather dots (custom drawn via Port)
-    Port($, { left:5, bottom:5, width:190, height:22, Behavior:WeatherPortBehavior }),
-    
-    // indicator
-    Content($, { skin:indicatorSkin }),
-	]
-}));
+      // temp max
+      Content($, { left:14*0+2, bottom:10+24, skin:skins.tempMax, visible:$.showWeather }),
+      Content($, { left:14*1+2, bottom:10+24, skin:skins.tempMax, visible:$.showWeather }),
+      Content($, { left:14*2+2, bottom:10+24, skin:skins.small, visible:$.showWeather }),
+      Content($, { left:14*3+2, bottom:10+24, skin:skins.tempMin, visible:$.showWeather }),
+      Content($, { left:14*4+2, bottom:10+24, skin:skins.tempMin, visible:$.showWeather }),
+      // weather dots (custom drawn via Port)
+      Port($, { left:5, bottom:5, width:190, height:22, visible:$.showWeather, Behavior:WeatherPortBehavior }),
+      
+      // indicator
+      Content($, { skin:indicatorSkin, visible:$.showWeather }),
+    ]
+  };
+});
 
 export default Layout;

@@ -1,44 +1,150 @@
-import Layout from "layout";
+import Layout, { applyTheme, applyTimeColors, getWeatherColor } from "layout";
 import Message from "pebble/message";
 import Health from "pebble/health";
 
-console.log("=== BUILD MARKER: V110_NO_FLASH ===");
+console.log("=== BUILD MARKER: V112_WEATHER_COLOR_MODE ===");
+
+const DEFAULT_SETTINGS = {
+  bgColor: "#000000",
+  weatherColorMode: 0,
+  hourColor: "#FFFFFF",
+  minuteColor: "#FFFFFF",
+  textColor: "#FFFFFF",
+  tempMaxColor: "#FF5500",
+  tempMinColor: "#55AAFF",
+  useFahrenheit: false,
+  use24Hour: true,
+  digitStyle: 0,
+  showSteps: true,
+  showWeather: true,
+};
+
+function loadSettings() {
+  const stored = localStorage.getItem("SETTINGS");
+  if (stored) {
+    try {
+      return { ...DEFAULT_SETTINGS, ...JSON.parse(stored) };
+    } catch (e) {}
+  }
+  return { ...DEFAULT_SETTINGS };
+}
+
+function saveSettings() {
+  localStorage.setItem("SETTINGS", JSON.stringify(settings));
+}
+
+function toHexColor(n) {
+  return "#" + ((n & 0xFFFFFF) | 0x1000000).toString(16).slice(1);
+}
+
+let settings = loadSettings();
 
 // 1. Initialize Message instance AT THE ABSOLUTE TOP
 const messageInstance = new Message({
-  keys: ["TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER"],
+  keys: [
+    "TEMP_MAX", "TEMP_MIN", "WEATHER_CODES", "REQ_WEATHER",
+    "BackgroundColor", "WeatherColorMode", "HourColor", "MinuteColor",
+    "TextColor", "TempMaxColor", "TempMinColor", "TemperatureUnit",
+    "HourFormat", "DigitStyle", "ShowSteps", "ShowWeather"
+  ],
   input: 512,
   output: 512,
 
   onReadable() {
     const msg = this.read();
-    let updated = false;
+    let weatherUpdated = false;
+    let themeUpdated = false;
+    let settingsUpdated = false;
 
     msg.forEach((value, key) => {
       if (key === "TEMP_MAX") {
         if (value !== tempMax) {
           tempMax = value;
           localStorage.setItem("TEMP_MAX", value.toString());
-          updated = true;
+          weatherUpdated = true;
         }
       } else if (key === "TEMP_MIN") {
         if (value !== tempMin) {
           tempMin = value;
           localStorage.setItem("TEMP_MIN", value.toString());
-          updated = true;
+          weatherUpdated = true;
         }
       } else if (key === "WEATHER_CODES") {
         if (value !== weatherHourlyCodesStr) {
           weatherHourlyCodesStr = value;
           localStorage.setItem("WEATHER_CODES", weatherHourlyCodesStr);
-          updated = true;
+          weatherUpdated = true;
         }
+      } else if (key === "BackgroundColor") {
+        settings.bgColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "WeatherColorMode") {
+        settings.weatherColorMode = parseInt(value, 10) || 0;
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "HourColor") {
+        settings.hourColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "MinuteColor") {
+        settings.minuteColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "TextColor") {
+        settings.textColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "TempMaxColor") {
+        settings.tempMaxColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "TempMinColor") {
+        settings.tempMinColor = toHexColor(value);
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "TemperatureUnit") {
+        settings.useFahrenheit = (value === 1);
+        weatherUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "HourFormat") {
+        settings.use24Hour = (value === 1);
+        isStartup = true;
+        settingsUpdated = true;
+      } else if (key === "DigitStyle") {
+        const style = parseInt(value, 10) || 0;
+        if (style !== settings.digitStyle) {
+          settings.digitStyle = style;
+          designOffsets = [];
+          isStartup = true;
+        }
+        settingsUpdated = true;
+      } else if (key === "ShowSteps") {
+        settings.showSteps = (value === 1);
+        lastSteps = -1;
+        themeUpdated = true;
+        settingsUpdated = true;
+      } else if (key === "ShowWeather") {
+        settings.showWeather = (value === 1);
+        weatherUpdated = true;
+        themeUpdated = true;
+        settingsUpdated = true;
       }
     });
 
-    if (updated) {
+    if (settingsUpdated) {
+      saveSettings();
+    }
+    const now = new Date();
+    if (themeUpdated && app.first) {
+      syncTimeColors(now.getHours());
+      applyTheme(app.first, settings);
+    }
+    if (weatherUpdated) {
       weatherDirty = true;
-      app.distribute("onClockChanged", { date: new Date() });
+    }
+    if (weatherUpdated || themeUpdated || settingsUpdated) {
+      app.distribute("onClockChanged", { date: now });
     }
   }
 });
@@ -50,6 +156,32 @@ let weatherHourlyCodesStr = localStorage.getItem("WEATHER_CODES") || "";
 if (weatherHourlyCodesStr.length !== 24) {
   weatherHourlyCodesStr = "";
 }
+
+function syncTimeColors(hours) {
+  let hc = settings.hourColor;
+  let mc = settings.minuteColor;
+  const mode = settings.weatherColorMode;
+  if (mode > 0 && weatherHourlyCodesStr.length === 24) {
+    const cur = getWeatherColor(weatherHourlyCodesStr.charCodeAt(hours) - 65);
+    if (mode === 1) {
+      if (cur) { hc = cur; mc = cur; }
+    } else if (mode === 2) {
+      if (cur) hc = cur;
+    } else if (mode === 3) {
+      if (cur) mc = cur;
+    } else if (mode === 4) {
+      if (cur) hc = cur;
+      const nxt = getWeatherColor(weatherHourlyCodesStr.charCodeAt((hours + 1) % 24) - 65);
+      if (nxt) mc = nxt;
+    }
+  }
+  const changed = (hc !== settings.activeHourColor || mc !== settings.activeMinColor);
+  settings.activeHourColor = hc;
+  settings.activeMinColor = mc;
+  return changed;
+}
+
+syncTimeColors(new Date().getHours());
 
 let isStartup = true;
 let lastMinutes = -1;
@@ -96,6 +228,10 @@ function readSteps(now, hours, minutes) {
 }
 
 function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
+  if (settings.digitStyle >= 2) {
+    return (settings.digitStyle - 2) * 10;
+  }
+
   let usedOffsets = {};
   for(let i=0; i<4; i++) {
     if(i !== targetIdx && digits[i] === digits[targetIdx] && currentOffsets[i] !== -1) {
@@ -103,6 +239,7 @@ function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
     }
   }
   
+  const equalWeight = (settings.digitStyle === 1);
   let totalWeight = 0;
   let firstUnused = -1;
   let lastUnused = -1;
@@ -110,7 +247,7 @@ function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
     if (!usedOffsets[offset]) {
-      totalWeight += WEIGHTS[i] || 0;
+      totalWeight += equalWeight ? 1 : (WEIGHTS[i] || 0);
       if (firstUnused === -1) firstUnused = offset;
       lastUnused = offset;
     }
@@ -124,7 +261,7 @@ function getRandomOffsetForDigit(targetIdx, digits, currentOffsets) {
   for (let i = 0; i < SET_COUNT; i++) {
     const offset = i * 10;
     if (!usedOffsets[offset]) {
-      sum += WEIGHTS[i] || 0;
+      sum += equalWeight ? 1 : (WEIGHTS[i] || 0);
       if (r <= sum) return offset;
     }
   }
@@ -146,11 +283,12 @@ class FaceApplicationBehavior {
   onClockChanged(application, clock) {
     const now = clock.date || new Date();
     const minutes = now.getMinutes();
-    if (!isStartup && minutes === lastMinutes && !weatherDirty) return;
+    if (!isStartup && minutes === lastMinutes && !weatherDirty && (!settings.showSteps || lastSteps !== -1)) return;
     const hours = now.getHours();
+    const dispHours = settings.use24Hour ? hours : (hours % 12 || 12);
 
-    const newH1 = Math.idiv(hours, 10);
-    const newH2 = hours % 10;
+    const newH1 = Math.idiv(dispHours, 10);
+    const newH2 = dispHours % 10;
     const newM1 = Math.idiv(minutes, 10);
     const newM2 = minutes % 10;
 
@@ -159,14 +297,21 @@ class FaceApplicationBehavior {
     if (isStartup) {
       let isValid = Array.isArray(designOffsets) && designOffsets.length === 4;
       if (isValid) {
-        let digits = [newH1, newH2, newM1, newM2];
-        for(let i=0; i<4; i++) {
-          if(designOffsets[i] < 0 || designOffsets[i] >= SET_COUNT * 10 || designOffsets[i] % 10 !== 0) isValid = false;
-        }
-        for(let i=0; i<4; i++) {
-          for(let j=i+1; j<4; j++) {
-            if(digits[i] === digits[j] && designOffsets[i] === designOffsets[j]) {
-              isValid = false;
+        if (settings.digitStyle >= 2) {
+          const fixedOffset = (settings.digitStyle - 2) * 10;
+          for (let i = 0; i < 4; i++) {
+            if (designOffsets[i] !== fixedOffset) isValid = false;
+          }
+        } else {
+          let digits = [newH1, newH2, newM1, newM2];
+          for(let i=0; i<4; i++) {
+            if(designOffsets[i] < 0 || designOffsets[i] >= SET_COUNT * 10 || designOffsets[i] % 10 !== 0) isValid = false;
+          }
+          for(let i=0; i<4; i++) {
+            for(let j=i+1; j<4; j++) {
+              if(digits[i] === digits[j] && designOffsets[i] === designOffsets[j]) {
+                isValid = false;
+              }
             }
           }
         }
@@ -184,23 +329,24 @@ class FaceApplicationBehavior {
       lastMinutes = minutes;
       isStartup = false;
     } else if (minutes !== lastMinutes) {
-      let digits = [newH1, newH2, newM1, newM2];
-      let changedIndices = [];
-      if (minutes === 0 && newH2 === 0) changedIndices.push(0);
-      if (minutes === 0) changedIndices.push(1);
-      if (newM2 === 0) changedIndices.push(2);
-      changedIndices.push(3);
+      if (settings.digitStyle < 2) {
+        let digits = [newH1, newH2, newM1, newM2];
+        let changedIndices = [];
+        if (minutes === 0 && (newH2 === 0 || (!settings.use24Hour && dispHours === 1))) changedIndices.push(0);
+        if (minutes === 0) changedIndices.push(1);
+        if (newM2 === 0) changedIndices.push(2);
+        changedIndices.push(3);
 
-      for(let i = 0; i < changedIndices.length; i++) {
-        designOffsets[changedIndices[i]] = -1;
+        for(let i = 0; i < changedIndices.length; i++) {
+          designOffsets[changedIndices[i]] = -1;
+        }
+        for(let i = 0; i < changedIndices.length; i++) {
+          let idx = changedIndices[i];
+          designOffsets[idx] = getRandomOffsetForDigit(idx, digits, designOffsets);
+        }
+        changed = true;
       }
-      for(let i = 0; i < changedIndices.length; i++) {
-        let idx = changedIndices[i];
-        designOffsets[idx] = getRandomOffsetForDigit(idx, digits, designOffsets);
-      }
-
       lastMinutes = minutes;
-      changed = true;
     }
 
     if (changed) {
@@ -221,9 +367,9 @@ class FaceApplicationBehavior {
     content = setVariant(content, designOffsets[3] + newM2);
 
     const date = now.getDate();
-    const s = readSteps(now, hours, minutes);
+    const s = settings.showSteps ? readSteps(now, hours, minutes) : lastSteps;
     const needDate = (date !== lastDate);
-    const needSteps = (s !== lastSteps);
+    const needSteps = settings.showSteps && (s !== lastSteps);
 
     // 5-8: Month/Date/Day, 9: Step Label (static variant 0)
     if (needDate) {
@@ -250,19 +396,29 @@ class FaceApplicationBehavior {
     }
 
     // 15-19: Weather/Temp, 20: Hourly Weather Port (only on startup or weather update)
+    const hourChanged = (lastIndicatorHour !== hours);
+    if ((weatherDirty || hourChanged) && syncTimeColors(hours)) {
+      applyTimeColors(container, settings.activeHourColor, settings.activeMinColor);
+    }
+
     if (weatherDirty) {
       weatherDirty = false;
-      content = setVariant(content, Math.idiv(tempMax, 10));
-      content = setVariant(content, tempMax % 10);
+      let dMax = settings.useFahrenheit ? Math.idiv(tempMax * 9 + 160, 5) : tempMax;
+      let dMin = settings.useFahrenheit ? Math.idiv(tempMin * 9 + 160, 5) : tempMin;
+      if (dMax < 0) dMax = 0; else if (dMax > 99) dMax = 99;
+      if (dMin < 0) dMin = 0; else if (dMin > 99) dMin = 99;
+
+      content = setVariant(content, Math.idiv(dMax, 10));
+      content = setVariant(content, dMax % 10);
       content = setVariant(content, 10);
-      content = setVariant(content, Math.idiv(tempMin, 10));
-      content = setVariant(content, tempMin % 10);
+      content = setVariant(content, Math.idiv(dMin, 10));
+      content = setVariant(content, dMin % 10);
 
       if (content) content.delegate("onWeatherChanged", weatherHourlyCodesStr);
     }
 
     // 21: indicator (setting coordinates always invalidates, so move only on hour change)
-    if (lastIndicatorHour !== hours && container.last) {
+    if (hourChanged && container.last) {
       lastIndicatorHour = hours;
       container.last.coordinates = { left: 5 + hours * 8, bottom: 28 };
     }
@@ -276,7 +432,7 @@ const FaceApplication = Application.template($ => ({
   ]
 }));
 
-const app = new FaceApplication(null, { 
+const app = new FaceApplication(settings, { 
   displayListLength: 2048, 
   touchCount: 0, 
   pixels: screen.width * 4,

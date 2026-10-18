@@ -1,7 +1,8 @@
 {
     "author": "tbando",
     "dependencies": {
-        "@moddable/pebbleproxy": "^0.1.8"
+        "@moddable/pebbleproxy": "^0.1.8",
+        "@rebble/clay": "^1.0.8"
     },
     "keywords": [
         "pebble-app"
@@ -10,7 +11,8 @@
     "pebble": {
         "capabilities": [
             "location",
-            "health"
+            "health",
+            "configurable"
         ],
         "displayName": "Orderland",
         "enableMultiJS": true,
@@ -18,7 +20,19 @@
             "TEMP_MAX",
             "TEMP_MIN",
             "WEATHER_CODES",
-            "REQ_WEATHER"
+            "REQ_WEATHER",
+            "BackgroundColor",
+            "WeatherColorMode",
+            "HourColor",
+            "MinuteColor",
+            "TextColor",
+            "TempMaxColor",
+            "TempMinColor",
+            "TemperatureUnit",
+            "HourFormat",
+            "DigitStyle",
+            "ShowSteps",
+            "ShowWeather"
         ],
         "projectType": "moddable",
         "resources": {

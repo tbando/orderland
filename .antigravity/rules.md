@@ -9,8 +9,8 @@ This file serves as a guide for AI coding assistants working on the **Orderland*
 ## Project Overview
 Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Alloy SDK (embedded JavaScript).
 - **C-side (`src/c/`)**: Handles Pebble OS lifecycle and the periodic weather request trigger.
-- **Phone JS-side (`src/pkjs/`)**: Pebble Kit JS running on the smartphone. Fetches weather data from Open-Meteo API.
-- **Watch JS-side (`src/embeddedjs/`)**: Moddable Alloy runtime on the watch. Controls UI layouts and logic. Reads health data (steps) natively via the `pebble/health` module (SDK 4.33+ / firmware 4.32+).
+- **Phone JS-side (`src/pkjs/`)**: Pebble Kit JS running on the smartphone. Fetches weather data from Open-Meteo API and serves the offline configuration page via `@rebble/clay` ([config.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/pkjs/config.js)).
+- **Watch JS-side (`src/embeddedjs/`)**: Moddable Alloy runtime on the watch. Controls UI layouts, user settings, and logic. Reads health data (steps) natively via the `pebble/health` module (SDK 4.33+ / firmware 4.32+).
 
 ## Key Rules & Architectural Decisions
 
@@ -29,18 +29,20 @@ Orderland is a hybrid Pebble watchface using Pebble SDK (C-side) and Moddable Al
 - **Health Data (Native)**:
   - The Watch JS-side reads steps natively via `import Health from "pebble/health"` once per minute on `minutechange` (SDK 4.33+ / firmware 4.32+). No C-side polling, no phone relay, no `HEALTH_STEPS` message key, and no `health` event listener (avoiding wakeups on background heart-rate/movement events).
   - **Do NOT use `Health.metric.get("step count")`**: despite the docs it always returns 0 on real firmware (verified on-device). Steps must be read via a single `Health.metric.query` with a midnight-to-now range (`aggregation: "sum"`, `scope: "once"`), computing midnight arithmetically from the existing `Date` object to avoid extra `Date` allocations or overnight double-queries.
-  - `readSteps()` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) wraps the API in try/catch and falls back to 0 (e.g. emulator without faked health data, or Pebble Health disabled).
+  - `readSteps()` in [main.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/main.js) wraps the API in try/catch and falls back to 0 (e.g. emulator without faked health data, or Pebble Health disabled). When `ShowSteps` is disabled in user settings, `readSteps()` is skipped completely.
 
-### 3. Local Storage Behavior
+### 3. Local Storage Behavior & User Settings (Clay)
 - **Watch JS-side (`src/embeddedjs/main.js`)**:
-  - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`: Caches weather to render it instantly on reload. Only written to `localStorage` when the received value differs from the current in-memory value. Steps are read live from `pebble/health` and are not cached.
-- **Phone JS-side (`src/pkjs/index.js`)**:
+  - `TEMP_MAX`, `TEMP_MIN`, `WEATHER_CODES`: Caches weather (in Celsius) to render it instantly on reload. Only written to `localStorage` when the received value differs from the current in-memory value. Steps are read live from `pebble/health` and are not cached.
+  - `SETTINGS`: JSON object persisting Clay user settings (`bgColor`, `weatherColorMode`, `hourColor`, `minuteColor`, `textColor`, `tempMaxColor`, `tempMinColor`, `useFahrenheit`, `use24Hour`, `digitStyle`, `showSteps`, `showWeather`), merged with `DEFAULT_SETTINGS` via spread syntax on startup.
+- **Phone JS-side (`src/pkjs/index.js`, `src/pkjs/config.js`)**:
   - `LAST_WEATHER_TIME`, `LAST_WEATHER_PAYLOAD_V3`: Caches weather API payloads for 60 minutes.
+  - `clay-settings`: Managed automatically by `@rebble/clay`.
 
 ### 4. Layout & Assets
 - Layout definitions reside in [layout.js](file:///mnt/raid5/root/ghq/github.com/tbando/orderland/src/embeddedjs/emery/layout.js).
 - Hour and minute digits use a single shared asset file to optimize memory usage: `large_digits_40.png` (4セット版、計40文字、各セット0〜9).
-- The `digitsSkin` is configured with `width: 60`, `variants: 60` (stride). The 4 digits (H1, H2, M1, M2) apply different variant offsets based on the chosen random offsets.
+- Shared `Texture` instances are defined once at module scope in `layout.js`, and `createSkins(settings)` / `applyTheme(container, settings)` / `applyTimeColors(container, hourColor, minColor)` build lightweight `Skin` instances colored according to user settings or hourly weather (`getWeatherColor`) without duplicating `Texture` / `GBitmap` allocations.
 - The 24-hour weather dots are rendered procedurally via a single Piu `Port` (`WeatherPortBehavior.onDraw` using `port.fillColor`) configured with Pebble 64-color palette constants (`WEATHER_COLORS`, `WEATHER_DOT_PATTERNS`) in `layout.js`, rather than 24 separate `Content` instances and `weather_dots.png`.
 - Unused assets such as `large_digits_0.png` and `large_digits_1.png` have been deleted, and `weather_dots` is unregistered from `manifest.json` to clean up space and avoid packaging overhead.
 
